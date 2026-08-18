@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DELTA Coffee</title>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f5f0e8; color: #2b1a12; }
+    body.modal-open { overflow: hidden; }
+    .app { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; padding: 20px 0; }
+    header h1 { font-size: 2rem; color: #6b3f24; }
+    .nav { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+    .nav button {
+      padding: 8px 22px; border: 1px solid #d8c7b2; border-radius: 20px; cursor: pointer;
+      background: #faf6ef; color: #6b3f24; font-weight: 600;
+    }
+    .nav button.active { background: #6b3f24; color: #fff; border-color: #6b3f24; }
+    .view { display: none; }
+    .view.active { display: block; animation: viewIn .3s ease; }
+    @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .subnav { display: flex; justify-content: center; gap: 10px; margin: 4px 0 16px; }
+    .subnav button {
+      padding: 8px 22px; border: 1px solid #d8c7b2; border-radius: 20px; cursor: pointer;
+      background: #faf6ef; color: #6b3f24; font-weight: 600;
+    }
+    .subnav button.active { background: #6b3f24; color: #fff; border-color: #6b3f24; }
+    .sub-view { display: none; }
+    .sub-view.active { display: block; }
+    .rec-h { font-size: 1rem; color: #6b3f24; margin: 12px 0 8px; }
+    .rec-h small { color: #a0815f; font-weight: 400; }
+    .mini-btn {
+      margin-top: 8px; padding: 7px 16px; border: 1px solid #d8c7b2; border-radius: 8px;
+      background: #faf6ef; color: #6b3f24; cursor: pointer; font-weight: 600; font-size: .85rem;
+    }
+    .mini-btn:hover { background: #f0e6d6; }
+    .rec-input { width: 100%; min-width: 90px; padding: 6px 8px; border: 1px solid #d8c7b2; border-radius: 6px; background: #fff; }
+    .img-upload { display: flex; align-items: center; gap: 6px; }
+    .img-upload .thumb {
+      width: 40px; height: 40px; border-radius: 6px; object-fit: cover;
+      border: 1px solid #d8c7b2; background: #faf6ef; flex: 0 0 auto;
+    }
+    .img-upload .thumb.hidden { display: none; }
+    .img-upload input[type="file"] { width: 100%; font-size: .72rem; }
+    .img-upload .rm { background: none; border: none; color: #b3261e; cursor: pointer; font-size: 1.1rem; flex: 0 0 auto; padding: 0 2px; }
+    .img-upload .rm.hidden { display: none; }
+    .rec-del { background: none; border: none; color: #b3261e; cursor: pointer; font-size: 1.1rem; }
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; margin-top: 20px; }
+    .menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 14px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08); overflow: hidden;
+      animation: cardIn .35s ease both;
+    }
+    .card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.14); transition: transform .18s ease, box-shadow .18s ease; }
+    .card:active { transform: scale(.97); }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .card-img { height: 140px; margin: -14px -14px 10px; background: #faf6ef; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-img .noimg { color: #d8c7b2; font-size: 2.6rem; }
+    .card h3 { font-size: 1rem; color: #6b3f24; }
+    .card .cat { font-size: .75rem; text-transform: uppercase; color: #a0815f; letter-spacing: .5px; }
+    .card .price { font-weight: 700; color: #2b7a4b; margin-top: 6px; }
+    .card .desc { font-size: .8rem; color: #6b5b4e; margin-top: 4px; }
+    .card .margin { font-size: .7rem; color: #a0815f; margin-top: 6px; }
+    .card .stok-info { font-weight: 400; }
+    .card .shortage { font-size: .72rem; color: #b3261e; background: #fbe3e1; border-radius: 6px; padding: 4px 8px; margin-top: 8px; }
+    .card.soldout { opacity: .45; pointer-events: none; }
+    .card.coming-soon-card { cursor: default; }
+    .card.coming-soon-card:hover { transform: none; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .coming-soon-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(135deg, #6b3f24, #a05c38);
+      color: #fff; font-size: .72rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px; margin-top: 8px;
+      letter-spacing: .3px;
+    }
+    .cart {
+      background: #fff; border-radius: 12px; padding: 16px; height: fit-content;
+      position: sticky; top: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .cart h2 { font-size: 1.1rem; margin-bottom: 12px; color: #6b3f24; }
+    .cart-empty { color: #a0815f; font-size: .9rem; text-align: center; padding: 20px 0; }
+    .cart-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0e8dd; }
+    .cart-item .name { flex: 1; font-size: .9rem; }
+    .cart-item .qty { display: flex; align-items: center; gap: 6px; }
+    .cart-item button { width: 24px; height: 24px; border: 1px solid #d8c7b2; background: #faf6ef; border-radius: 6px; cursor: pointer; }
+    .cart-item .line-total { font-weight: 600; font-size: .9rem; min-width: 60px; text-align: right; }
+    .total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; padding: 14px 0 10px; }
+    .checkout {
+      width: 100%; padding: 12px; border: none; border-radius: 10px; cursor: pointer;
+      background: #2b7a4b; color: #fff; font-size: 1rem; font-weight: 700;
+    }
+    .checkout:disabled { background: #b3b3b3; cursor: not-allowed; }
+
+    /* Admin orders */
+    .orders-wrap { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-top: 20px; }
+    .orders-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .orders-bar h2 { font-size: 1.1rem; color: #6b3f24; }
+    .orders-bar .filter { display: flex; gap: 8px; align-items: center; }
+    .orders-bar select, .orders-bar input {
+      padding: 6px 10px; border: 1px solid #d8c7b2; border-radius: 8px; background: #faf6ef;
+    }
+    .table-scroll { overflow-x: auto; }
+    table.orders { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    table.orders th, table.orders td { padding: 10px 8px; border-bottom: 1px solid #f0e8dd; text-align: left; }
+    table.orders th { color: #a0815f; text-transform: uppercase; font-size: .72rem; letter-spacing: .5px; }
+    table.orders tr:hover td { background: #faf6ef; }
+    table.orders .items-detail { color: #6b5b4e; font-size: .8rem; }
+    .status-pill { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .st-baru { background: #fde8d7; color: #b3641a; }
+    .st-diproses { background: #dceafd; color: #1a64b3; }
+    .st-selesai { background: #d9f2e2; color: #1a7a4b; }
+    .st-batal { background: #fbe3e1; color: #b3261e; }
+    .badge { display:inline-block; background:#fde8d7; color:#b3641a; border-radius:20px; padding:2px 10px; font-size:.75rem; font-weight:700; margin-left:6px; }
+    .status-select { padding:4px 8px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid transparent; cursor:pointer; appearance:auto; }
+    .status-select.st-baru { background:#fde8d7; color:#b3641a; }
+    .status-select.st-diproses { background:#dceafd; color:#1a64b3; }
+    .status-select.st-selesai { background:#d9f2e2; color:#1a7a4b; }
+    .status-select.st-batal { background:#fbe3e1; color:#b3261e; }
+    .status-select:hover { border-color: currentColor; }
+    .status-select:disabled { opacity:.5; cursor:not-allowed; }
+    .order-count { font-size:.9rem; color:#6b5b4e; }
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #2b7a4b; color: #fff; padding: 12px 24px; border-radius: 10px;
+      display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: toastIn .25s cubic-bezier(.2,.9,.3,1.2);
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(14px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    #toast.error { background: #b3261e; }
+    .kasir-tools { margin-top: 14px; }
+    .bahan-menipis {
+      background: #fde8d7; color: #b3641a; border: 1px solid #f5c99a; border-radius: 10px;
+      padding: 10px 14px; margin-top: 14px; font-size: .88rem;
+    }
+    .bahan-menipis-title { font-weight: 700; margin-bottom: 8px; font-size: .9rem; }
+    .bahan-menipis-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: .8rem; }
+    .chip-habis { background: #fbe3e1; color: #b3261e; border: 1px solid #f0b7b3; }
+    .chip-menipis { background: #fde8d7; color: #b3641a; border: 1px solid #f5c99a; }
+    .chip-name { font-weight: 700; }
+    .chip-info { opacity: .85; }
+    .chip-restock { padding: 4px 12px; border: none; border-radius: 14px; background: #2b7a4b; color: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; }
+    .chip-restock:hover { background: #1f6a3d; }
+    #kasir-search {
+      width: 100%; padding: 10px 14px; border: 1px solid #d8c7b2; border-radius: 10px;
+      font-size: .95rem; background: #fff; margin-bottom: 8px;
+    }
+    #kasir-search:focus { outline: 2px solid #2b7a4b33; }
+    .cat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .cat-chips button {
+      padding: 5px 14px; border: 1px solid #d8c7b2; border-radius: 20px; cursor: pointer;
+      background: #faf6ef; color: #6b3f24; font-size: .82rem;
+    }
+    .cat-chips button.active { background: #6b3f24; color: #fff; border-color: #6b3f24; }
+    /* ===== Modal & floating cart ===== */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal { background: #fff; border-radius: 16px; max-width: 420px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,.25); animation: modalIn .28s cubic-bezier(.2,.9,.3,1.2); }
+    @keyframes modalIn { from { opacity: 0; transform: scale(.9) translateY(16px); } to { opacity: 1; transform: none; } }
+    .prod-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px 8px; }
+    .prod-header h3 { margin: 0; color: #6b3f24; }
+    .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #a0815f; }
+    .prod-body { padding: 0 18px; }
+    .prod-kategori { color: #a0815f; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; }
+    .prod-desc { color: #6b5b4e; font-size: .9rem; margin: 6px 0; }
+    .prod-stok { color: #2b7a4b; font-size: .8rem; }
+    .prod-harga { font-size: 1.4rem; font-weight: 700; color: #2b7a4b; margin: 10px 0 2px; }
+    .prod-margin { color: #a0815f; font-size: .78rem; }
+    .qty-picker { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+    .qty-picker button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #d8c7b2; background: #faf6ef; font-size: 1.1rem; cursor: pointer; }
+    .qty-picker span { font-size: 1.1rem; font-weight: 700; min-width: 24px; text-align: center; }
+    .prod-add, .modal-buy { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #2b7a4b; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 0; }
+    .prod-add { border-radius: 0 0 16px 16px; }
+
+    /* ===== Halaman produk fullscreen ===== */
+    .prod-page { flex-direction: column; justify-content: flex-start; background: #fff; padding: 0; animation: prodUp .3s ease; }
+    @keyframes prodUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+    .prod-page-top { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border-bottom: 1px solid #f0e8dd; background: #fff; }
+    .prod-page-top h3 { margin: 0; flex: 1; text-align: center; color: #6b3f24; font-size: 1rem; }
+    .prod-img { width: 100%; height: 46vh; background: #faf6ef; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .prod-img img { width: 100%; height: 100%; object-fit: cover; }
+    .prod-img .noimg { color: #c9b79f; font-size: 3rem; }
+    .prod-page-body { width: 100%; padding: 16px 18px; flex: 1; overflow-y: auto; }
+    .prod-page .qty-picker { display: flex; align-items: center; color: #6b5b4e; }
+    .prod-addbar { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px; border-top: 1px solid #f0e8dd; background: #fff; position: sticky; bottom: 0; }
+    .prod-add-total { font-weight: 700; font-size: 1.15rem; color: #2b7a4b; }
+    .prod-addbar .prod-add { border-radius: 10px; flex: 1; }
+    .cart-modal-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem; padding: 14px 18px; border-top: 1px solid #f0e8dd; }
+    .cart-modal-body { padding: 6px 18px; max-height: 48vh; overflow-y: auto; }
+    .cart-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f0e8dd; }
+    .cart-row .name { flex: 1; }
+    .cart-row .qty { display: flex; align-items: center; gap: 8px; }
+    .cart-row .qty button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #d8c7b2; background: #faf6ef; cursor: pointer; }
+    .cart-row .line { font-weight: 600; min-width: 70px; text-align: right; }
+    .cart-row .del { color: #b3261e; background: none; border: none; cursor: pointer; font-size: 1rem; }
+    .pay-label { display: block; font-size: .8rem; color: #a0815f; margin: 6px 18px 8px; }
+    .pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 18px; }
+    .pay-methods .pm { padding: 12px; border: 2px solid #e8ddce; border-radius: 10px; cursor: pointer; text-align: center; font-weight: 600; font-size: .88rem; }
+    .pay-methods .pm.active { border-color: #2b7a4b; background: #e8f5ee; color: #1a7a4b; }
+    .pay-summary { padding: 0 18px; color: #6b5b4e; font-size: .9rem; margin: 4px 0 12px; }
+    .pay-modal .cart-modal-total { padding-bottom: 6px; }
+
+    .login-overlay { position: fixed; inset: 0; background: #f5f0e8; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { background: #fff; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 340px; box-shadow: 0 8px 30px rgba(0,0,0,.15); text-align: center; }
+    .login-card h2 { color: #6b3f24; margin: 0 0 4px; }
+    .login-sub { color: #a0815f; font-size: .85rem; margin: 0 0 18px; }
+    .login-card input { width: 100%; padding: 12px 14px; border: 1px solid #d8c7b2; border-radius: 10px; margin-bottom: 10px; font-size: .95rem; background: #faf6ef; }
+    .login-card button { width: 100%; padding: 13px; border: none; border-radius: 10px; background: #2b7a4b; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    .login-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .login-tabs button { flex: 1; padding: 9px; border: 1px solid #d8c7b2; border-radius: 10px; background: #faf6ef; color: #6b3f24; font-weight: 600; cursor: pointer; font-size: .85rem; }
+    .login-tabs button.active { background: #6b3f24; color: #fff; border-color: #6b3f24; }
+    .login-err { color: #b3261e; font-size: .82rem; margin-top: 10px; min-height: 18px; }
+    .login-hint { color: #c9b79f; font-size: .72rem; margin-top: 12px; }
+    .user-menu { margin-left: auto; position: relative; align-self: center; }
+    .user-chip { padding: 6px 14px; background: #6b3f24; color: #fff; border-radius: 20px; font-size: .78rem; font-weight: 600; cursor: pointer; display: inline-block; }
+    .user-dropdown { position: absolute; right: 0; top: calc(100% + 6px); background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.2); min-width: 150px; overflow: hidden; z-index: 60; }
+    .user-dropdown button { display: block; width: 100%; padding: 11px 16px; border: none; background: #fff; text-align: left; font-size: .85rem; cursor: pointer; }
+    .user-dropdown button:hover { background: #faf6ef; }
+    .dd-title { padding: 8px 16px 4px; font-size: .72rem; color: #a0815f; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .dd-sep { height: 1px; background: #f0e8dd; margin: 4px 0; }
+    .user-dropdown .dd-logout { color: #b3261e; }
+    .float-cart { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 90; background:#6b3f24; color:#fff; width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.35); font-size:2rem; transition: transform .15s ease, box-shadow .15s ease; }
+    .float-cart:hover { transform: translateX(-50%) scale(1.06); }
+    .float-cart:active { transform: translateX(-50%) scale(.94); }
+    .float-cart-icon { color:#fff; display:flex; align-items:center; justify-content:center; }
+    .float-cart-badge { position:absolute; top:-2px; right:-2px; background:#b3261e; color:#fff; min-width:24px; height:24px; border-radius:12px; font-size:.8rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; animation: badgePop .3s ease; }
+    @keyframes badgePop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+    /* ===== Payment config ===== */
+    .paycfg-card { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid #f0e8dd; border-radius: 12px; margin-bottom: 10px; background: #fff; }
+    .paycfg-card.off { opacity: .55; }
+    .paycfg-toggle label { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: #6b3f24; font-weight: 600; cursor: pointer; }
+    .paycfg-toggle { width: 44px; height: 24px; border-radius: 12px; background: #ddd; position: relative; transition: background .2s; flex: 0 0 auto; }
+    .paycfg-toggle.on { background: #2b7a4b; }
+    .paycfg-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .2s; }
+    .paycfg-toggle.on::after { left: 23px; }
+    .paycfg-meta { flex: 1; font-size: .82rem; color: #6b5b4e; }
+    .paycfg-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid #e7e8dd; background: #f5f0e8; cursor: pointer; }
+    .paycfg-img.placeholder { display: flex; align-items: center; justify-content: center; color: #c9b79f; }
+    /* ===== */
+    /* ===== "NOTIF" checkout — instruksi bayar ===== */
+    .pay-instr { background: #faf6ef; border: 1px dashed #d8c7b2; border-radius: 10px; padding: 10px; margin: 10px 18px; font-size: .85rem; color: #6b5b4e; }
+    .pay-instr img { width: 100%; max-width: 220px; border-radius: 8px; margin-top: 8px; display: block; }
+    /* ====== */
+
+    /* ===== Notifikasi "masuk keranjang" — geser keluar dari FAB ke kanan */
+    .cart-notif { position: fixed; bottom: 32px; left: calc(50% + 48px); transform: translateX(-12px); z-index: 95; background: #2b7a4b; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: .82rem; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.3); opacity: 0; pointer-events: none; white-space: nowrap; }
+    .cart-notif.show { animation: notifSlide .35s cubic-bezier(.2,.9,.3,1.1) forwards; }
+    .cart-notif.out { animation: notifOut .35s cubic-bezier(.6,-.1,.3,1) forwards; }
+    @keyframes notifSlide { 0% { opacity: 0; transform: translateX(-12px) scale(.8); } 60% { opacity: 1; transform: translateX(4px) scale(1.04); } 100% { opacity: 1; transform: translateX(0) scale(1); } }
+    @keyframes notifOut { 0% { opacity: 1; transform: translateX(0) scale(1); } 100% { opacity: 0; transform: translateX(-60px) scale(.5); } }
+    /* animasi icon bergoyang saat item masuk */
+    @keyframes cartBounce { 0% { transform: scale(1) rotate(0); } 35% { transform: scale(1.25) rotate(-12deg); } 60% { transform: scale(.95) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+    .float-cart.bounce .float-cart-icon { animation: cartBounce .45s ease; }
+    /* item terbang ke keranjang */
+    .fly-dot { position: fixed; width: 64px; height: 64px; border-radius: 50%; background: #6b3f24; z-index: 300; pointer-events: none; transition: transform .45s cubic-bezier(.4,-.2,.3,1), opacity .45s ease; box-shadow: 0 4px 12px rgba(0,0,0,.3); margin: -32px 0 0 -32px; }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .cart { position: static; display: none; }   /* sembunyikan cart panel desktop di mobile */
+      .float-cart { display: flex !important; }
+      .float-cart-badge { display: flex !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>☕ DELTA Coffee</h1>
+      <p id="status" style="display:none"></p>
+      <nav class="nav">
+        <button id="tab-kasir" class="active">MENU</button>
+        <button id="tab-history">🕘 Riwayat Pesanan</button>
+        <button id="menipis-toggle" style="display:none">⚠️ Bahan<span id="menipis-badge" class="badge" style="display:none"></span></button>
+        <div class="user-menu" style="display:none" id="user-menu">
+          <span class="user-chip" id="user-chip"></span>
+          <div class="user-dropdown" id="user-dropdown" style="display:none">
+            <button class="dd-sub" id="dd-setting">⚙️ Setting</button>
+            <button class="dd-sub" id="dd-password">🔑 Ganti Password</button>
+            <div class="dd-sep"></div>
+            <button class="dd-logout" id="dd-logout">🚪 Logout</button>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- ===== View: Kasir ===== -->
+    <div class="view active" id="view-kasir">
+      <div id="bahan-menipis" class="bahan-menipis" style="display:none"></div>
+      <div class="kasir-tools">
+        <input type="text" id="kasir-search" placeholder="🔍 Cari menu...">
+        <div id="kasir-cats" class="cat-chips"></div>
+      </div>
+      <div class="layout">
+        <div class="menu" id="menu"></div>
+
+        <aside class="cart">
+          <h2>🧾 Pesanan</h2>
+          <div class="cart-empty" id="cart-empty">Keranjang kosong. Klik menu untuk memesan.</div>
+          <div id="cart-items"></div>
+          <div class="total">
+            <span>Total</span>
+            <span id="total">Rp 0</span>
+          </div>
+          <button class="checkout" id="checkout" disabled>Buat Pesanan</button>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ===== View: Riwayat Pesanan ===== -->
+    <div class="view" id="view-history">
+      <div class="orders-wrap" style="margin-top:4px">
+        <div class="orders-bar">
+          <h2>📜 Riwayat Pesanan</h2>
+          <div class="filter">
+            <select id="kasir-history-filter">
+              <option value="">Semua</option>
+              <option value="BARU">Baru</option>
+              <option value="DIPROSES">Diproses</option>
+              <option value="SELESAI">Selesai</option>
+              <option value="BATAL">Batal</option>
+            </select>
+            <button id="kasir-history-refresh" class="mini-btn">⟳</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="orders" id="kasir-history-table">
+            <thead><tr><th>Waktu</th><th>Invoice</th><th>Nama</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="kasir-history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== View: Admin ===== -->
+    <div class="view" id="view-admin">
+      <nav class="subnav">
+        <button id="sub-menu" class="active">💰 Menu & Harga</button>
+        <button id="sub-bahan">🧂 Bahan</button>
+        <button id="sub-resep">📖 Resep</button>
+        <button id="sub-pay">💳 Pembayaran</button>
+      </nav>
+
+      <!-- sub-view: Menu & Harga -->
+      <div class="sub-view active" id="subview-menu">
+        <div class="orders-wrap">
+          <div class="orders-bar">
+            <h2>💰 Menu & Harga Jual</h2>
+            <div class="filter">
+              <button id="menu-add" class="mini-btn" style="background:#6b3f24;color:#fff">+ Tambah menu</button>
+              <button id="menu-save" class="mini-btn" style="background:#2b7a4b;color:#fff">💾 Simpan</button>
+              <button id="menu-load" class="mini-btn" style="background:#faf6ef">⟳ Muat</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" id="menu-table">
+              <thead><tr><th>Nama</th><th>Kategori</th><th>Harga Jual</th><th>Deskripsi</th><th>Markup</th><th>Gambar URL</th><th>Status</th><th></th></tr></thead>
+              <tbody id="menu-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- sub-view: Bahan -->
+      <div class="sub-view" id="subview-bahan">
+        <div class="orders-wrap">
+          <div class="orders-bar">
+            <h2>🧂 Bahan Baku</h2>
+            <div class="filter">
+              <button id="bahan-add" class="mini-btn">+ Tambah</button>
+              <button id="bahan-save" class="mini-btn" style="background:#2b7a4b;color:#fff">💾 Simpan</button>
+              <button id="bahan-load" class="mini-btn" style="background:#6b3f24;color:#fff">⟳ Muat</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" id="bahan-table">
+              <thead><tr><th>Nama</th><th>Harga Beli</th><th>Isi</th><th>Stok Bahan</th><th>Harga/gr·ml</th><th></th></tr></thead>
+              <tbody id="bahan-body"></tbody>
+            </table>
+          </div>
+
+          <h3 class="rec-h" style="margin-top:24px">📜 Riwayat penambahan</h3>
+          <div class="table-scroll">
+            <table class="orders" id="log-body-table">
+              <thead><tr><th>Bahan</th><th>+ Jumlah</th><th>Stok Baru</th><th>Nama</th><th>Waktu</th><th></th></tr></thead>
+              <tbody id="log-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- sub-view: Resep -->
+      <div class="sub-view" id="subview-resep">
+        <div class="orders-wrap">
+          <div class="orders-bar">
+            <h2>📖 Resep</h2>
+            <div class="filter">
+              <button id="resep-add" class="mini-btn" style="background:#6b3f24;color:#fff">+ Tambah resep</button>
+              <button id="resep-save" class="mini-btn" style="background:#2b7a4b;color:#fff">💾 Simpan</button>
+              <button id="resep-load" class="mini-btn" style="background:#faf6ef">⟳ Muat</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" id="resep-table">
+              <thead><tr><th>Menu</th><th>Bahan</th><th>Jumlah</th><th></th></tr></thead>
+              <tbody id="resep-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- sub-view: Pembayaran -->
+      <div class="sub-view" id="subview-pay">
+        <div class="orders-wrap">
+          <div class="orders-bar">
+            <h2>💳 Metode Pembayaran</h2>
+            <div class="filter">
+              <button id="pay-cfg-save" class="mini-btn" style="background:#2b7a4b;color:#fff">💾 Simpan</button>
+              <button id="pay-cfg-load" class="mini-btn" style="background:#faf6ef">⟳ Muat</button>
+            </div>
+          </div>
+          <div id="pay-cfg-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- ===== Login ===== -->
+  <div class="login-overlay" id="login-overlay">
+    <div class="login-card">
+      <h2>☕ DELTA Coffee</h2>
+      <p class="login-sub" id="login-title">Login untuk melanjutkan</p>
+      <div class="login-tabs">
+        <button id="lm-login" class="active" data-mode="login">Login</button>
+        <button id="lm-register" data-mode="register">Register</button>
+        <button id="lm-guest" data-mode="guest">Guest</button>
+      </div>
+      <input type="text" id="login-user" placeholder="Username" autocomplete="username">
+      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+      <button id="login-btn">Login</button>
+      <div class="login-err" id="login-err"></div>
+          </div>
+  </div>
+
+  <!-- Floating cart button -->
+  <div id="cart-notif" class="cart-notif"></div>
+  <div id="float-cart" class="float-cart" style="visibility:hidden">
+    <div class="float-cart-icon">🛒</div>
+    <span id="float-cart-badge" class="float-cart-badge">0</span>
+  </div>
+
+  <!-- ===== Halaman Detail Produk (fullscreen, ala Shopee) ===== -->
+  <div class="overlay prod-page" id="prod-overlay" style="display:none">
+    <div class="prod-page-top">
+      <button class="modal-close" data-close="prod">←</button>
+      <h3 id="prod-nama"></h3>
+      <span style="width:24px"></span>
+    </div>
+    <div class="prod-img" id="prod-img"></div>
+    <div class="prod-page-body">
+      <div class="prod-kategori" id="prod-kategori"></div>
+      <div class="prod-harga" id="prod-harga"></div>
+      <div class="prod-margin" id="prod-margin"></div>
+      <div class="prod-desc" id="prod-desc"></div>
+      <div class="prod-stok" id="prod-stok"></div>
+      <div class="qty-picker">
+        <span>Jumlah</span>
+        <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
+          <button id="prod-qty-minus">−</button>
+          <span id="prod-qty">1</span>
+          <button id="prod-qty-plus">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="prod-addbar">
+      <div class="prod-add-total" id="prod-add-total"></div>
+      <button class="prod-add" id="prod-add">+ Keranjang</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Keranjang ===== -->
+  <div class="overlay" id="cart-overlay" style="display:none">
+    <div class="modal cart-modal">
+      <div class="prod-header">
+        <h3>🛒 Keranjang</h3>
+        <button class="modal-close" data-close="cart">✕</button>
+      </div>
+      <div class="cart-modal-body" id="cart-modal-body"></div>
+      <div class="cart-modal-total">
+        <span>Total</span><span id="cart-modal-total">Rp 0</span>
+      </div>
+      <button class="modal-buy" id="cart-checkout">Checkout</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Checkout / Pembayaran ===== -->
+  <div class="overlay" id="pay-overlay" style="display:none">
+    <div class="modal pay-modal">
+      <div class="prod-header">
+        <h3>💰 Checkout</h3>
+        <button class="modal-close" data-close="pay">✕</button>
+      </div>
+      <div class="pay-summary" id="pay-summary"></div>
+      <label class="pay-label">Metode Pembayaran</label>
+      <div class="pay-methods" id="pay-methods"></div>
+      <div class="pay-instr" id="pay-instr" style="display:none"></div>
+      <div class="cart-modal-total">
+        <span>Total Bayar</span><span id="pay-total">Rp 0</span>
+      </div>
+      <button class="modal-buy" id="pay-confirm">Bayar Sekarang</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Edit Log Bahan ===== -->
+  <div class="overlay" id="log-edit-overlay" style="display:none">
+    <div class="modal" style="max-width:360px">
+      <div class="prod-header">
+        <h3>✏️ Edit Riwayat</h3>
+        <button class="modal-close" data-close="log-edit">✕</button>
+      </div>
+      <div class="prod-body" style="padding:0 18px 18px">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Nama Bahan</label>
+        <input class="rec-input" id="log-edit-nama" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Jumlah Ditambah</label>
+        <input class="rec-input" id="log-edit-jumlah" type="number" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Stok Baru</label>
+        <input class="rec-input" id="log-edit-stokbaru" type="number" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Oleh (username)</label>
+        <input class="rec-input" id="log-edit-username" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Waktu</label>
+        <input class="rec-input" id="log-edit-waktu" type="datetime-local" style="width:100%">
+        <button class="prod-add" id="log-edit-save" style="margin-top:16px;border-radius:10px">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal Ganti Password ===== -->
+  <div class="overlay" id="password-overlay" style="display:none">
+    <div class="modal" style="max-width:360px">
+      <div class="prod-header">
+        <h3>🔑 Ganti Password</h3>
+        <button class="modal-close" data-close="password">✕</button>
+      </div>
+      <div class="prod-body" style="padding:0 18px 18px">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Password Lama</label>
+        <input type="password" class="rec-input" id="pwd-old" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Password Baru</label>
+        <input type="password" class="rec-input" id="pwd-new" style="width:100%">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Ulangi Password Baru</label>
+        <input type="password" class="rec-input" id="pwd-confirm" style="width:100%">
+        <div class="login-err" id="pwd-err" style="margin-top:8px;min-height:18px"></div>
+        <button class="prod-add" id="pwd-save" style="margin-top:16px;border-radius:10px">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== URL Worker. Default cloudflare, override via ?worker= untuk test lokal =====
+    const WORKER_URL = new URLSearchParams(location.search).get("worker") ||
+                       "delta-coffee.rian34433.workers.dev";
+    // =================================================================================
+
+    const cart = {};  // { [nama]: { item, qty } }
+    let menu = [];
+
+    const rupiah = n => "Rp " + n.toLocaleString("id-ID");
+
+    // sama seperti worker.js — konversi harga beli → per unit (isi "1000 ml"/"500 gr")
+    function toPerUnit(hargaBeli, isi) {
+      const h = Number(hargaBeli);
+      if (isNaN(h) || h <= 0) return 0;
+      const m = String(isi || "").toLowerCase().match(/([\d.,]+)\s*(ml|gr|g)?/);
+      if (!m) return 0;
+      const qty = parseFloat(m[1].replace(",", "."));
+      if (!(qty > 0)) return 0;
+      return h / qty;
+    }
+    // label unit dari isi ("1000 ml" → "/ml", "500 gr" → "/gr")
+    function isiUnitLabel(isi) {
+      const s = String(isi || "").toLowerCase();
+      if (s.includes("ml")) return "/ml";
+      if (s.includes("gr") || s.includes("g")) return "/gr";
+      return "";
+    }
+    // isi kolom preview "Harga/gr·ml"
+    function perUnitPreview(b) {
+      if (!b.harga) return "—";
+      const perUnit = toPerUnit(b.harga, b.isi);
+      return perUnit ? rupiah(perUnit) + isiUnitLabel(b.isi) : "—";
+    }
+
+    // fetch JSON dengan timeout — cegah hang kalau worker tak jalan
+    async function fetchJson(url, opts = {}) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const res = await fetch(url, { ...opts, signal: ctrl.signal });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    // ===== Tab switching =====
+    const tabKasir = document.getElementById("tab-kasir");
+    const tabHistory = document.getElementById("tab-history");
+    const viewKasir = document.getElementById("view-kasir");
+    const viewAdmin = document.getElementById("view-admin");
+    const viewHistory = document.getElementById("view-history");
+
+    function switchTab(name) {
+      currentTab = name;
+      tabKasir.classList.toggle("active", name === "kasir");
+      tabHistory.classList.toggle("active", name === "history");
+      viewKasir.classList.toggle("active", name === "kasir");
+      viewHistory.classList.toggle("active", name === "history");
+      viewAdmin.classList.toggle("active", name === "admin");
+      if (name === "history") loadKasirHistory();
+      updateFloatCart();   // hide/show FAB kart sesuai view
+    }
+    tabKasir.addEventListener("click", () => switchTab("kasir"));
+    tabHistory.addEventListener("click", () => switchTab("history"));
+
+    // ===== Admin sub-tabs: Menu & Harga | Bahan | Resep =====
+    let recipeState = { bahan: [], resep: [] };   // {id, nama, harga} / {id, nama, bahan, jumlah}
+    let menuState = [];                          // {id, nama, kategori, harga_jual, deskripsi, markup}
+
+    const subMenu = document.getElementById("sub-menu");
+    const subBahan = document.getElementById("sub-bahan");
+    const subResep = document.getElementById("sub-resep");
+    const subPay = document.getElementById("sub-pay");
+    const subViewMenu = document.getElementById("subview-menu");
+    const subViewBahan = document.getElementById("subview-bahan");
+    const subViewResep = document.getElementById("subview-resep");
+    const subViewPay = document.getElementById("subview-pay");
+
+    function switchSub(name) {
+      subCur = name;
+      subMenu.classList.toggle("active", name === "menu");
+      subBahan.classList.toggle("active", name === "bahan");
+      subResep.classList.toggle("active", name === "resep");
+      subPay.classList.toggle("active", name === "pay");
+      subViewMenu.classList.toggle("active", name === "menu");
+      subViewBahan.classList.toggle("active", name === "bahan");
+      subViewResep.classList.toggle("active", name === "resep");
+      subViewPay.classList.toggle("active", name === "pay");
+      if (name === "menu") loadMenuData();
+      if (name === "bahan") loadRecipeData();
+      if (name === "resep") loadRecipeData();
+      if (name === "pay") loadPayConfig();
+    }
+    subMenu.addEventListener("click", () => switchSub("menu"));
+    subBahan.addEventListener("click", () => switchSub("bahan"));
+    subResep.addEventListener("click", () => switchSub("resep"));
+    document.getElementById("sub-pay").addEventListener("click", () => switchSub("pay"));
+
+    // ===== Editor Menu & Harga =====
+    async function loadMenuData() {
+      try {
+        menuState = await fetchJson(`${WORKER_URL}/api/menudata`);
+        renderMenuEditor();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal muat menu: " + e.message, true);
+      }
+    }
+
+    function renderMenuEditor() {
+      const body = document.getElementById("menu-body");
+      body.innerHTML = "";
+      menuState.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input class="rec-input" data-field="nama" data-id="${m.id}" value="${escapeAttr(m.nama || "")}"></td>
+          <td><input class="rec-input" data-field="kategori" data-id="${m.id}" value="${escapeAttr(m.kategori || "")}"></td>
+          <td><input class="rec-input" data-field="harga_jual" data-id="${m.id}" type="number" value="${escapeAttr(m.harga_jual ?? "")}" placeholder="auto"></td>
+          <td><input class="rec-input" data-field="deskripsi" data-id="${m.id}" value="${escapeAttr(m.deskripsi || "")}"></td>
+          <td><input class="rec-input" data-field="markup" data-id="${m.id}" type="number" value="${escapeAttr(m.markup ?? "")}" placeholder="3"></td>
+          <td>
+            <div class="img-upload">
+              <img class="thumb ${m.gambar ? "" : "hidden"}" data-id="${m.id}" src="${escapeAttr(m.gambar || "")}" alt="">
+              <input type="file" accept="image/*" data-upload="${m.id}" title="Upload gambar">
+              <button class="rm ${m.gambar ? "" : "hidden"}" data-imgrm="${m.id}" title="Hapus gambar">✕</button>
+            </div>
+          </td>
+          <td>
+            <select class="rec-input" data-field="status" data-id="${m.id}">
+              <option value="">Launch</option>
+              <option value="COMING">Coming Soon</option>
+            </select>
+          </td>
+          <td><button class="rec-del" data-type="menu" data-id="${m.id}">✕</button></td>
+        `;
+        body.appendChild(tr);
+        // set select value secara programatik — atribut "selected" di innerHTML tidak reliable
+        const sel = tr.querySelector(`select[data-id="${m.id}"]`);
+        if (sel) sel.value = m.status || "";
+      });
+    }
+
+    document.getElementById("menu-add").addEventListener("click", () => {
+      menuState.push({ id: `m${Date.now()}`, nama: "", kategori: "", harga_jual: "", deskripsi: "", markup: "", gambar: "", status: "" });
+      renderMenuEditor();
+    });
+
+    document.getElementById("menu-load").addEventListener("click", loadMenuData);
+
+    // ===== Upload gambar menu (resize → data URL, disimpan ke field gambar) =====
+    const MAX_DIM = 600, JPEG_Q = 0.82;
+    function resizeImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          const cv = document.createElement("canvas");
+          cv.width = w; cv.height = h;
+          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(cv.toDataURL("image/jpeg", JPEG_Q));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Gambar gagal dibaca")); };
+        img.src = url;
+      });
+    }
+    document.addEventListener("change", async e => {
+      const fi = e.target.closest("input[data-upload]");
+      if (!fi || !fi.files || !fi.files[0]) return;
+      const id = fi.dataset.upload;
+      const obj = menuState.find(m => m.id === id);
+      if (!obj) return;
+      try {
+        const dataUrl = await resizeImage(fi.files[0]);
+        obj.gambar = dataUrl;
+        // update preview + tombol hapus
+        const td = fi.closest("td");
+        const img = td.querySelector(".thumb");
+        const rm = td.querySelector(".rm");
+        img.src = dataUrl; img.classList.remove("hidden");
+        rm.classList.remove("hidden");
+      } catch (err) {
+        toast("Gagal upload gambar: " + err.message, true);
+      } finally {
+        fi.value = "";
+      }
+    });
+    document.addEventListener("click", e => {
+      const rm = e.target.closest("[data-imgrm]");
+      if (!rm) return;
+      const id = rm.dataset.imgrm;
+      const obj = menuState.find(m => m.id === id);
+      if (!obj) return;
+      obj.gambar = "";
+      const td = rm.closest("td");
+      td.querySelector(".thumb").classList.add("hidden");
+      rm.classList.add("hidden");
+    });
+
+    // ===== Pengaturan Metode Pembayaran =====
+    let payCfg = [];   // [{id, nama, aktif, teks, gambar (dataUrl)}]
+    const PAY_DEFAULTS = [
+      { id: "Tunai", nama: "Tunai", aktif: true, teks: "Bayar langsung di kasir.", gambar: "" },
+      { id: "QRIS", nama: "QRIS", aktif: true, teks: "Scan QRIS di bawah untuk bayar.", gambar: "" },
+      { id: "Transfer", nama: "Transfer Bank", aktif: true, teks: "Transfer ke rekening di bawah, lalu konfirmasi ke kasir.", gambar: "" },
+      { id: "Saldo", nama: "Saldo", aktif: true, teks: "Potong dari saldo member.", gambar: "" }
+    ];
+
+    async function loadPayConfig() {
+      try {
+        const data = await fetchJson(`${WORKER_URL}/api/payconfig`);
+        payCfg = (Array.isArray(data) ? data : data.methods || []);
+        // pastikan semua default ada; tambah yg hilang
+        PAY_DEFAULTS.forEach(d => {
+          if (!payCfg.some(p => p.id === d.id)) payCfg.push({ ...d });
+        });
+        renderPayConfig();
+        renderPayMethods();   // refresh checkout
+      } catch (e) {
+        console.error(e);
+        toast("Gagal muat pengaturan pembayaran: " + e.message, true);
+      }
+    }
+
+    function renderPayConfig() {
+      const box = document.getElementById("pay-cfg-list");
+      box.innerHTML = "";
+      payCfg.forEach(m => {
+        const card = document.createElement("div");
+        card.className = "paycfg-card" + (m.aktif ? "" : " off");
+        card.innerHTML = `
+          <div class="paycfg-toggle ${m.aktif ? "on" : ""}" data-ptoggle="${m.id}" style="cursor:pointer">
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700;color:#6b3f24">${escapeHtml(m.nama)}</div>
+            <div class="paycfg-meta">
+              <input class="rec-input" data-ptext="${m.id}" value="${escapeAttr(m.teks || "")}" placeholder="Instruksi bayar..." style="margin-top:6px">
+            </div>
+            <input type="file" accept="image/*" data-pimg="${m.id}" style="margin-top:6px;font-size:.8rem" title="Upload gambar (QR/rekening)">
+          </div>
+          <img class="paycfg-img ${m.gambar ? "" : "placeholder"}" data-preview="${m.id}"
+               src="${escapeAttr(m.gambar || "")}" alt="${escapeAttr(m.nama)}">
+        `;
+        // klik preview kalau kosong → pilih file
+        box.appendChild(card);
+      });
+    }
+
+    // toggle aktif
+    document.addEventListener("click", e => {
+      const t = e.target.closest(".paycfg-toggle");
+      if (!t) return;
+      const m = payCfg.find(x => x.id === t.dataset.ptoggle);
+      if (m) { m.aktif = !m.aktif; renderPayConfig(); }
+    });
+
+    // edit teks instruksi
+    document.addEventListener("input", e => {
+      const inp = e.target.closest("[data-ptext]");
+      if (!inp) return;
+      const m = payCfg.find(x => x.id === inp.dataset.ptext);
+      if (m) m.teks = inp.value;
+    });
+
+    // upload gambar metode bayar (QRIS/bank) — resize pakai resizeImage()
+    document.addEventListener("change", async e => {
+      const fi = e.target.closest("input[data-pimg]");
+      if (!fi || !fi.files || !fi.files[0]) return;
+      const mid = fi.dataset.pimg;
+      const m = payCfg.find(x => x.id === mid);
+      if (!m) return;
+      try {
+        m.gambar = await resizeImage(fi.files[0]);
+        renderPayConfig();
+        renderPayMethods();
+      } catch (err) {
+        toast("Gagal upload gambar: " + err.message, true);
+      } finally {
+        fi.value = "";
+      }
+    });
+
+    // preview kosong → file browser
+    document.addEventListener("click", e => {
+      const pv = e.target.closest(".paycfg-img.placeholder");
+      if (!pv) return;
+      const fi = document.querySelector(`input[data-pimg="${pv.dataset.preview}"]`);
+      if (fi) fi.click();
+    });
+
+    document.getElementById("pay-cfg-save").addEventListener("click", async () => {
+      const btn = document.getElementById("pay-cfg-save");
+      btn.disabled = true;
+      try {
+        const res = await fetchJson(`${WORKER_URL}/api/payconfig`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ methods: payCfg })
+        });
+        toast(`Pengaturan pembayaran tersimpan (${res.methods || payCfg.length}) ✓`);
+        renderPayMethods();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal simpan: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    document.getElementById("pay-cfg-load").addEventListener("click", loadPayConfig);
+
+    document.getElementById("menu-save").addEventListener("click", async () => {
+      const btn = document.getElementById("menu-save");
+      btn.disabled = true;
+      try {
+        const res = await fetchJson(`${WORKER_URL}/api/menudata`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ menu: menuState.filter(m => m.nama) })
+        });
+        toast(`Tersimpan ${res.menu} menu ✓`);
+        await loadMenuData();   // reload state dari server (pastikan status tersimpan benar)
+        loadMenu();   // refresh kasir
+      } catch (e) {
+        console.error(e);
+        toast("Gagal simpan: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ===== Editor Resep & Bahan =====
+    let recipeLoaded = false;
+    async function loadRecipeData() {
+      try {
+        recipeState = await fetchJson(`${WORKER_URL}/api/recipedata`);
+        recipeLoaded = true;
+        renderRecipe();
+        loadBahanLog();   // riwayat penambahan
+      } catch (e) {
+        console.error(e);
+        toast("Gagal muat resep: " + e.message, true);
+      }
+    }
+
+    function renderRecipe() {
+      const bahanBody = document.getElementById("bahan-body");
+      bahanBody.innerHTML = "";
+      // sort nama A-Z; baris baru (_new) tetap di atas
+      const bahanSorted = [...recipeState.bahan].sort((a, b) => {
+        if (a._new) return -1;
+        if (b._new) return 1;
+        return String(a.nama || "").localeCompare(String(b.nama || ""), "id");
+      });
+      bahanSorted.forEach(b => {
+        const perUnit = toPerUnit(b.harga, b.isi);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input class="rec-input" data-field="nama" data-id="${b.id}" value="${escapeAttr(b.nama || "")}"></td>
+          <td><input class="rec-input" data-field="harga" data-id="${b.id}" type="number" value="${escapeAttr(b.harga ?? "")}"></td>
+          <td><input class="rec-input" data-field="isi" data-id="${b.id}" value="${escapeAttr(b.isi || "")}" placeholder="gr/ml"></td>
+          <td><input class="rec-input" data-field="stok" data-id="${b.id}" type="number" value="${escapeAttr(b.stok ?? "")}"></td>
+          <td class="items-detail">${perUnitPreview(b)}</td>
+          <td><button class="rec-del" data-type="bahan" data-id="${b.id}">✕</button></td>
+        `;
+        bahanBody.appendChild(tr);
+      });
+
+      const resepBody = document.getElementById("resep-body");
+      resepBody.innerHTML = "";
+      // urutkan resep per nama menu (A-Z)
+      const resepSorted = [...recipeState.resep].sort((a, b) =>
+        String(a.nama || "").localeCompare(String(b.nama || ""), "id"));
+      resepSorted.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input class="rec-input" data-field="nama" data-id="${r.id}" value="${escapeAttr(r.nama || "")}" list="menu-list"></td>
+          <td><input class="rec-input" data-field="bahan" data-id="${r.id}" value="${escapeAttr(r.bahan || "")}" list="bahan-list"></td>
+          <td><input class="rec-input" data-field="jumlah" data-id="${r.id}" type="number" value="${escapeAttr(r.jumlah ?? "")}"></td>
+          <td><button class="rec-del" data-type="resep" data-id="${r.id}">✕</button></td>
+        `;
+        resepBody.appendChild(tr);
+      });
+
+      // datalist autocomplete nama menu (A-Z, unik) — dari resep & menu
+      let dlMenu = document.getElementById("menu-list");
+      if (!dlMenu) {
+        dlMenu = document.createElement("datalist");
+        dlMenu.id = "menu-list";
+        document.body.appendChild(dlMenu);
+      }
+      const menuNames = [...new Set([
+        ...recipeState.resep.map(r => (r.nama || "").trim()).filter(Boolean),
+        ...menuState.map(m => (m.nama || "").trim()).filter(Boolean)
+      ])].sort((a, b) => a.localeCompare(b, "id"));
+      dlMenu.innerHTML = menuNames.map(n => `<option value="${escapeAttr(n)}">`).join("");
+
+      // datalist autocomplete bahan
+      let dl = document.getElementById("bahan-list");
+      if (!dl) {
+        dl = document.createElement("datalist");
+        dl.id = "bahan-list";
+        document.body.appendChild(dl);
+      }
+      dl.innerHTML = recipeState.bahan.map(b => `<option value="${escapeAttr(b.nama)}">`).join("");
+    }
+
+    // edit inline — simpan ke state
+    function syncRecInput(inp) {
+      const { field, id } = inp.dataset;
+      if (!field || !id) return;
+      let list;
+      if (id[0] === "b") list = recipeState.bahan;
+      else if (id[0] === "m") list = menuState;
+      else list = recipeState.resep;
+      const obj = list.find(x => x.id === id);
+      if (obj) obj[field] = inp.value;
+      // update preview "Harga/gr·ml" tanpa re-render (jaga fokus input)
+      if (id[0] === "b") {
+        const tr = inp.closest("tr");
+        if (tr) {
+          const td = tr.querySelectorAll("td")[4];
+          if (td) td.textContent = perUnitPreview(obj);
+        }
+      }
+    }
+    document.addEventListener("input", e => {
+      const inp = e.target.closest(".rec-input");
+      if (!inp) return;
+      syncRecInput(inp);
+    });
+    document.addEventListener("change", e => {
+      const inp = e.target.closest(".rec-input");
+      if (!inp) return;
+      syncRecInput(inp);
+    });
+
+    // hapus baris
+    document.addEventListener("click", e => {
+      const del = e.target.closest(".rec-del");
+      if (!del) return;
+      const { type, id } = del.dataset;
+      if (type === "bahan") recipeState.bahan = recipeState.bahan.filter(b => b.id !== id);
+      else if (type === "menu") menuState = menuState.filter(m => m.id !== id);
+      else recipeState.resep = recipeState.resep.filter(r => r.id !== id);
+      if (type === "menu") renderMenuEditor();
+      else renderRecipe();
+    });
+
+    document.getElementById("bahan-add").addEventListener("click", () => {
+      recipeState.bahan.unshift({ id: `b${Date.now()}`, nama: "", harga: "", isi: "", stok: "", _new: true });
+      renderRecipe();
+      // fokus input nama baris baru
+      const firstInput = document.querySelector("#bahan-body tr:first-child input[data-field='nama']");
+      if (firstInput) firstInput.focus();
+    });
+    document.getElementById("resep-add").addEventListener("click", () => {
+      recipeState.resep.push({ id: `r${Date.now()}`, nama: "", bahan: "", jumlah: "" });
+      renderRecipe();
+    });
+
+    // ===== Restock bahan (tambah stok bahan existing) + riwayat =====
+    let bahanLog = [];
+
+    async function loadBahanLog() {
+      try {
+        bahanLog = await fetchJson(`${WORKER_URL}/api/bahan/log`);
+        renderBahanLog();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal muat riwayat bahan: " + e.message, true);
+      }
+    }
+
+    function renderBahanLog() {
+      const body = document.getElementById("log-body");
+      body.innerHTML = "";
+      if (!bahanLog.length) {
+        body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#a0815f;padding:14px">Belum ada riwayat penambahan.</td></tr>`;
+        return;
+      }
+      bahanLog.forEach(l => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(l.nama || "-")}</td>
+          <td style="color:#2b7a4b;font-weight:600">+${escapeHtml(String(l.jumlah))}</td>
+          <td>${escapeHtml(String(l.stokBaru))}</td>
+          <td>${escapeHtml(l.username || "guest")}</td>
+          <td class="items-detail">${formatWaktu(l.waktu)}</td>
+          <td style="white-space:nowrap">
+            <button class="mini-btn log-edit-btn" data-idx="${l._idx}" style="padding:4px 10px;font-size:.75rem">✏️</button>
+            <button class="mini-btn log-del-btn" data-idx="${l._idx}" style="padding:4px 10px;font-size:.75rem;color:#b3261e;margin-left:4px">✕</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    // Edit log
+    let logEditIdx = null;
+    document.addEventListener("click", e => {
+      const btn = e.target.closest(".log-edit-btn");
+      if (!btn) return;
+      const idx = Number(btn.dataset.idx);
+      const entry = bahanLog.find(l => l._idx === idx);
+      if (!entry) return;
+      logEditIdx = idx;
+      document.getElementById("log-edit-nama").value = entry.nama || "";
+      document.getElementById("log-edit-jumlah").value = entry.jumlah ?? "";
+      document.getElementById("log-edit-stokbaru").value = entry.stokBaru ?? "";
+      document.getElementById("log-edit-username").value = entry.username || "";
+      // format waktu untuk datetime-local (strip detik+ms, timezone → local)
+      const dt = entry.waktu ? new Date(entry.waktu) : new Date();
+      const pad = n => String(n).padStart(2, "0");
+      document.getElementById("log-edit-waktu").value =
+        `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      document.getElementById("log-edit-overlay").style.display = "flex";
+      overlayCount++;
+    });
+
+    document.getElementById("log-edit-save").addEventListener("click", async () => {
+      if (logEditIdx === null) return;
+      const btn = document.getElementById("log-edit-save");
+      btn.disabled = true;
+      try {
+        const waktuVal = document.getElementById("log-edit-waktu").value;
+        await fetchJson(`${WORKER_URL}/api/bahan/log/${logEditIdx}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nama: document.getElementById("log-edit-nama").value.trim(),
+            jumlah: Number(document.getElementById("log-edit-jumlah").value),
+            stokBaru: Number(document.getElementById("log-edit-stokbaru").value),
+            username: document.getElementById("log-edit-username").value.trim(),
+            waktu: waktuVal ? new Date(waktuVal).toISOString() : undefined
+          })
+        });
+        document.getElementById("log-edit-overlay").style.display = "none";
+        if (overlayCount > 0) overlayCount--;
+        if (overlayCount <= 0) { overlayCount = 0; document.body.classList.remove("modal-open"); }
+        logEditIdx = null;
+        toast("Riwayat diperbarui ✓");
+        loadBahanLog();
+      } catch (err) {
+        toast("Gagal simpan: " + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Hapus log
+    document.addEventListener("click", async e => {
+      const btn = e.target.closest(".log-del-btn");
+      if (!btn) return;
+      const idx = Number(btn.dataset.idx);
+      const entry = bahanLog.find(l => l._idx === idx);
+      if (!entry) return;
+      if (!confirm(`Hapus riwayat penambahan "${entry.nama}" +${entry.jumlah}?`)) return;
+      try {
+        await fetchJson(`${WORKER_URL}/api/bahan/log/${idx}`, { method: "DELETE" });
+        toast("Riwayat dihapus ✓");
+        loadBahanLog();
+      } catch (err) {
+        toast("Gagal hapus: " + err.message, true);
+      }
+    });
+
+    // Simpan bersama: worker tulis ulang keduanya. Ini dipakai via Bahan + Resep btn.
+    async function saveRecipe() {
+      // normalisasi: gabung batch identik (nama+harga+isi) jadi satu baris, stok dijumlahkan
+      const batchMap = new Map();
+      recipeState.bahan.filter(b => b.nama).forEach(b => {
+        const key = `${b.nama}|${b.harga}|${b.isi}`;
+        if (batchMap.has(key)) {
+          const g = batchMap.get(key);
+          g.stok = String((Number(g.stok) || 0) + (Number(b.stok) || 0));
+        } else {
+          batchMap.set(key, { nama: b.nama, harga: b.harga, isi: b.isi, stok: b.stok });
+        }
+      });
+      const res = await fetchJson(`${WORKER_URL}/api/recipedata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // kirim bahan/resep HANYA kalau sudah di-load — cegah hapus data tak sengaja
+          bahan: recipeLoaded ? [...batchMap.values()] : undefined,
+          resep: recipeLoaded ? recipeState.resep.filter(r => r.nama && r.bahan) : undefined,
+          username: session ? session.username : "guest"
+        })
+      });
+      toast(`Tersimpan: ${res.bahan} bahan, ${res.resep} resep ✓`);
+      loadMenu();   // harga jual auto-update dari modal baru
+      loadBahanLog();   // refresh riwayat penambahan
+    }
+
+    document.getElementById("bahan-save").addEventListener("click", async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      try { await saveRecipe(); } catch (err) {
+        console.error(err); toast("Gagal simpan: " + err.message, true);
+      } finally { btn.disabled = false; }
+    });
+    document.getElementById("resep-save").addEventListener("click", async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      try { await saveRecipe(); } catch (err) {
+        console.error(err); toast("Gagal simpan: " + err.message, true);
+      } finally { btn.disabled = false; }
+    });
+
+    document.getElementById("bahan-load").addEventListener("click", () => loadRecipeData());
+    document.getElementById("resep-load").addEventListener("click", () => loadRecipeData());
+
+    // ===== Auth / session =====
+    const SESSION_TTL = 24 * 60 * 60 * 1000;   // 1 hari
+    function loadSession() {
+      const s = JSON.parse(localStorage.getItem("cs_session") || "null");
+      if (!s) return null;
+      if (s.expires && Date.now() > s.expires) {   // kedaluwarsa → hapus
+        localStorage.removeItem("cs_session");
+        return null;
+      }
+      return s;
+    }
+    let session = loadSession();
+
+    function showLogin() { document.getElementById("login-overlay").style.display = "flex"; }
+    function hideLogin() { document.getElementById("login-overlay").style.display = "none"; }
+
+    // mode login: "login" | "register" | "guest"
+    let loginMode = "login";
+    document.querySelectorAll(".login-tabs button").forEach(b =>
+      b.addEventListener("click", () => {
+        loginMode = b.dataset.mode;
+        document.querySelectorAll(".login-tabs button").forEach(x => x.classList.toggle("active", x === b));
+        const pass = document.getElementById("login-pass");
+        const title = document.getElementById("login-title");
+        const hint = document.getElementById("login-hint");
+        const btn = document.getElementById("login-btn");
+        if (loginMode === "guest") {
+          pass.style.display = "none";
+          title.textContent = "Masuk sebagai tamu (tanpa password)";
+          hint.textContent = "Pesanan tamu tidak disimpan sebagai riwayat";
+          btn.textContent = "Masuk sebagai Tamu";
+        } else {
+          pass.style.display = "";
+          hint.textContent = loginMode === "register" ? "Buat akun baru — role USER" : "admin/admin123 · kasir/kasir123 · user/user123";
+          title.textContent = loginMode === "register" ? "Daftar akun baru" : "Login untuk melanjutkan";
+          btn.textContent = loginMode === "register" ? "Daftar" : "Login";
+        }
+      }));
+
+    async function doLogin() {
+      const username = document.getElementById("login-user").value.trim();
+      const password = document.getElementById("login-pass").value;
+      const err = document.getElementById("login-err");
+      err.textContent = "";
+
+      try {
+        let res;
+        if (loginMode === "guest") {
+          if (!username) { err.textContent = "Username tamu wajib diisi"; return; }
+          // guest: tak simpan ke server, session lokal tanpa riwayat
+          session = { username, role: "GUEST", expires: Date.now() + SESSION_TTL };
+          localStorage.setItem("cs_session", JSON.stringify(session));
+          applySession();
+          return;
+        }
+        const url = loginMode === "register" ? "/api/register" : "/api/login";
+        res = await fetchJson(`${WORKER_URL}${url}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        session = { username: res.username, role: res.role, expires: Date.now() + SESSION_TTL };
+        localStorage.setItem("cs_session", JSON.stringify(session));
+        applySession();
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    }
+    document.getElementById("login-btn").addEventListener("click", doLogin);
+    document.getElementById("login-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+    document.getElementById("login-user").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+    function applySession() {
+      if (!session) { showLogin(); return; }
+      hideLogin();
+      const menu = document.getElementById("user-menu");
+      menu.style.display = "";
+      const chip = document.getElementById("user-chip");
+      chip.textContent = `${session.username} · ${session.role}`;
+      document.getElementById("user-dropdown").style.display = "none";
+      applyPrivilege();
+      loadMenu().then(() => restoreCart());
+      if (session.role === "GUEST") {
+        document.getElementById("status").style.display = "none";
+      }
+      loadKasirHistory();
+    }
+
+    function logout() {
+      session = null;
+      localStorage.removeItem("cs_session");
+      localStorage.removeItem("cs_guest_orders");   // riwayat guest sesi ini hilang
+      localStorage.removeItem("cs_cart");           // keranjang ikut dibersihkan
+      Object.keys(cart).forEach(k => delete cart[k]);
+      renderCart();
+      showLogin();
+    }
+    document.getElementById("user-chip").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const dd = document.getElementById("user-dropdown");
+      dd.style.display = dd.style.display === "none" ? "block" : "none";
+    });
+    document.getElementById("dd-logout").addEventListener("click", () => {
+      if (confirm("Logout dari akun ini?")) logout();
+    });
+    document.getElementById("dd-setting").addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("user-dropdown").style.display = "none";
+      switchTab("admin");
+      switchSub("menu");
+    });
+    document.getElementById("dd-password").addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("user-dropdown").style.display = "none";
+      document.getElementById("pwd-old").value = "";
+      document.getElementById("pwd-new").value = "";
+      document.getElementById("pwd-confirm").value = "";
+      document.getElementById("pwd-err").textContent = "";
+      document.getElementById("password-overlay").style.display = "flex";
+      overlayCount++;
+    });
+    document.getElementById("pwd-save").addEventListener("click", async () => {
+      const oldP = document.getElementById("pwd-old").value;
+      const newP = document.getElementById("pwd-new").value;
+      const confP = document.getElementById("pwd-confirm").value;
+      const err = document.getElementById("pwd-err");
+      err.textContent = "";
+      if (!oldP || !newP || !confP) { err.textContent = "Semua field wajib diisi"; return; }
+      if (newP !== confP) { err.textContent = "Konfirmasi password tidak cocok"; return; }
+      if (newP.length < 4) { err.textContent = "Password minimal 4 karakter"; return; }
+      const btn = document.getElementById("pwd-save");
+      btn.disabled = true;
+      try {
+        await fetchJson(`${WORKER_URL}/api/change-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: session.username, oldPassword: oldP, newPassword: newP })
+        });
+        document.getElementById("password-overlay").style.display = "none";
+        if (overlayCount > 0) overlayCount--;
+        if (overlayCount <= 0) { overlayCount = 0; document.body.classList.remove("modal-open"); }
+        toast("Password diubah ✓");
+      } catch (e) {
+        err.textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    // tutup dropdown saat klik di luar
+    document.addEventListener("click", () => {
+      document.getElementById("user-dropdown").style.display = "none";
+    });
+
+    // ===== Guard privilege =====
+    function applyPrivilege() {
+      const role = session ? session.role : null;
+      // KASIR & USER & GUEST: tak boleh akses admin view.
+      if (role !== "ADMIN" && currentTab === "admin") switchTab(role === "KASIR" ? "history" : "kasir");
+
+      // tombol Setting — cuma ADMIN lihat
+      const isAdmin = role === "ADMIN";
+      document.getElementById("dd-setting").style.display = isAdmin ? "" : "none";
+
+      // USER: sembunyikan aksi batal/hapus riwayat (kasir riwayat cuma view)
+      // (di-render via renderKasirHistory)
+    }
+    let currentTab = "kasir";
+    let subCur = "menu";
+
+    async function loadMenu() {
+      try {
+        const data = await fetchJson(`${WORKER_URL}/api/menu`);
+        menu = Array.isArray(data) ? data : data.menu;
+        renderBahanMenipis(Array.isArray(data) ? [] : data.bahanMenipis);
+        populateCats();
+        renderMenu();
+        document.getElementById("status").style.display = "none";
+      } catch (e) {
+        document.getElementById("status").textContent = "Gagal load menu — cek WORKER_URL & worker";
+        document.getElementById("status").style.display = "";
+        console.error(e);
+      }
+    }
+
+    // ===== Banner bahan menipis =====
+    let menipisVisible = false;   // default hide
+    function updateMenipisBadge(n) {
+      const toggle = document.getElementById("menipis-toggle");
+      const badge = document.getElementById("menipis-badge");
+      const role = session ? session.role : null;
+      const show = role === "ADMIN" || role === "KASIR";
+      toggle.style.display = show && n > 0 ? "" : "none";
+      badge.style.display = n > 0 ? "" : "none";
+      badge.textContent = n;
+    }
+    function toggleMenipis() {
+      menipisVisible = !menipisVisible;
+      renderBahanMenipis(lastMenipis);
+    }
+    let lastMenipis = [];
+    function renderBahanMenipis(list) {
+      const box = document.getElementById("bahan-menipis");
+      if (!box) return;
+      lastMenipis = list || [];
+      // role-gated: ADMIN/KASIR saja yang lihat notif stok
+      if (!session || (session.role !== "ADMIN" && session.role !== "KASIR")) {
+        box.style.display = "none"; return;
+      }
+      if (!list || !list.length) { box.style.display = "none"; updateMenipisBadge(0); return; }
+      updateMenipisBadge(list.length);
+      if (!menipisVisible) { box.style.display = "none"; return; }   // default hide
+      const chips = list.map(x => {
+        const habis = x.stok <= 0;
+        const cls = habis ? "chip-habis" : "chip-menipis";
+        const label = habis ? "Habis" : `Sisa ${x.stok}`;
+        return `<div class="chip ${cls}">
+          <span class="chip-name">${escapeHtml(x.bahan)}</span>
+          <span class="chip-info">${label}</span>
+          <button class="chip-restock" data-bahan="${escapeAttr(x.bahan)}">Restock</button>
+        </div>`;
+      }).join("");
+      box.innerHTML = `<div class="bahan-menipis-title">⚠️ Bahan Menipis</div><div class="bahan-menipis-chips">${chips}</div>`;
+      box.style.display = "block";
+    }
+
+    // restock cepat dari chip. Kalau bahan belum terisi lengkap → daftarkan dulu (harga + isi).
+    async function chipRestock(bahan) {
+      // pastikan recipeState ter-load (kalau dari view MENU, belum tentu)
+      if (!recipeLoaded) {
+        try { recipeState = await fetchJson(`${WORKER_URL}/api/recipedata`); recipeLoaded = true; }
+        catch (e) { toast("Gagal muat data bahan", true); return; }
+      }
+      // cek bahan sudah punya data di recipeState (harga, isi, stok terisi)
+      const batch = (recipeState.bahan || []).find(b =>
+        b.nama && b.nama.toLowerCase() === bahan.toLowerCase() &&
+        b.harga && b.isi);
+      if (!batch) {
+        // bahan belum terisi → minta harga beli + isi, tambahkan batch baru
+        const harga = prompt(`Harga beli ${bahan} (Rp):`, "");
+        if (harga === null || !(Number(harga) > 0)) { toast("Harga tidak valid", true); return; }
+        const isi = prompt(`Isi (gr/ml, contoh: 1000 ml):`, "1000 ml");
+        if (isi === null || !isi.trim()) { toast("Isi belum diisi", true); return; }
+        const stok = prompt(`Stok awal (gr/ml):`, "100");
+        if (stok === null || !(Number(stok) > 0)) { toast("Stok tidak valid", true); return; }
+        // tambahkan batch baru via save bahan
+        recipeState.bahan.push({ id: `b${Date.now()}`, nama: bahan, harga, isi, stok });
+        saveRecipe()
+          .then(() => toast(`Bahan ${bahan} terdaftar + stok ${stok} ✓`))
+          .catch(err => { console.error(err); toast("Gagal daftar bahan: " + err.message, true); });
+        return;
+      }
+      const jml = prompt(`Tambah stok ${bahan} (gr/ml):`, "100");
+      if (jml === null) return;
+      if (!(Number(jml) > 0)) { toast("Jumlah tidak valid", true); return; }
+      fetchJson(`${WORKER_URL}/api/bahan/restock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama: bahan, jumlah: Number(jml), username: session ? session.username : "guest" })
+      }).then(res => {
+        toast(`Stok ${res.nama} → ${res.stokBaru} ✓`);
+        loadMenu();
+      }).catch(e => toast("Gagal restock: " + e.message, true));
+    }
+    document.addEventListener("click", e => {
+      const b = e.target.closest(".chip-restock");
+      if (b) chipRestock(b.dataset.bahan);
+    });
+    document.getElementById("menipis-toggle").addEventListener("click", toggleMenipis);
+
+    // ===== Filter kasir: kategori + search =====
+    let catFilter = "all";
+    let qFilter = "";
+
+    function populateCats() {
+      const box = document.getElementById("kasir-cats");
+      const cats = [...new Set(menu.map(m => m.kategori).filter(Boolean))];
+      const btns = [{ v: "all", t: "Semua" }, ...cats.map(c => ({ v: c, t: c }))];
+      box.innerHTML = btns.map(b =>
+        `<button data-cat="${escapeAttr(b.v)}" class="${catFilter === b.v ? "active" : ""}">${escapeHtml(b.t)}</button>`
+      ).join("");
+    }
+
+    function filteredMenu() {
+      const q = qFilter.toLowerCase();
+      return menu.filter(m =>
+        (catFilter === "all" || m.kategori === catFilter) &&
+        (!q || (m.nama || "").toLowerCase().includes(q) ||
+          (m.deskripsi || "").toLowerCase().includes(q))
+      );
+    }
+
+    function renderMenu() {
+      const box = document.getElementById("menu");
+      box.innerHTML = "";
+      filteredMenu().forEach((item, i) => {
+        const div = document.createElement("div");
+        const coming = !!item.comingSoon;
+        div.className = "card" + (coming ? " coming-soon-card" : (item.bisaJual === false ? " soldout" : ""));
+        div.style.animationDelay = Math.min(i * 0.035, 0.6) + "s";   // stagger masuk
+        const modal = Number(item.modal) || 0;
+        const profit = (Number(item.harga) || 0) - modal;
+        const porsi = Number(item.porsi) || 0;
+        div.innerHTML = `
+          ${item.gambar ? `<div class="card-img"><img src="${escapeAttr(item.gambar)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=noimg>☕</div>'"></div>` : `<div class="card-img"><div class="noimg">☕</div></div>`}
+          <span class="cat">${escapeHtml(item.kategori || "")}</span>
+          <h3>${escapeHtml(item.nama)}</h3>
+          <div class="desc">${escapeHtml(item.deskripsi || "")}</div>
+          ${coming
+            ? `<div class="coming-soon-badge">🚀 Coming Soon</div>`
+            : `<div class="price">${rupiah(Number(item.harga) || 0)}<span class="stok-info"> · stok ${porsi}</span></div>
+               ${session && session.role === "ADMIN" && modal ? `<div class="margin">modal ${rupiah(modal)} · untung ${rupiah(profit)}</div>` : ""}
+               ${!item.bisaJual ? `<div class="shortage">⚠ ${escapeHtml((item.kekurangan || []).join(", "))}</div>` : ""}`
+          }
+        `;
+        div.addEventListener("click", () => { if (!coming && item.bisaJual !== false) openProduct(item); });
+        box.appendChild(div);
+      });
+    }
+
+    // ===== Modal Detail Produk =====
+    let prodItem = null, prodQty = 1;
+    function openProduct(item) {
+      prodItem = item;
+      prodQty = 1;
+      document.getElementById("prod-nama").textContent = item.nama;
+      document.getElementById("prod-kategori").textContent = item.kategori || "";
+      document.getElementById("prod-desc").textContent = item.deskripsi || "";
+      const porsi = Number(item.porsi) || 0;
+      document.getElementById("prod-stok").textContent = "Stok tersedia: " + porsi + " porsi";
+      document.getElementById("prod-harga").textContent = rupiah(Number(item.harga) || 0);
+      const modal = Number(item.modal) || 0;
+      const isAdmin = session && session.role === "ADMIN";
+      document.getElementById("prod-margin").textContent = isAdmin && modal ? `Modal ${rupiah(modal)} · untung ${rupiah((Number(item.harga)||0) - modal)}` : "";
+      // gambar
+      const imgBox = document.getElementById("prod-img");
+      imgBox.innerHTML = item.gambar
+        ? `<img src="${escapeAttr(item.gambar)}" onerror="this.outerHTML='<div class=noimg>☕</div>'">`
+        : `<div class="noimg">☕</div>`;
+      updateProdTotal();
+      document.getElementById("prod-overlay").style.display = "flex";
+      document.body.classList.add("modal-open");
+    }
+
+    function updateProdTotal() {
+      document.getElementById("prod-qty").textContent = prodQty;
+      if (prodItem) document.getElementById("prod-add-total").textContent = rupiah(Number(prodItem.harga) * prodQty);
+    }
+    // counter overlay terbuka — body di-lock selama ≥1 overlay aktif
+    let overlayCount = 0;
+    function closeOverlay(id) {
+      document.getElementById(id + "-overlay").style.display = "none";
+      if (overlayCount > 0) overlayCount--;
+      if (overlayCount <= 0) { overlayCount = 0; document.body.classList.remove("modal-open"); }
+    }
+
+    document.querySelectorAll(".modal-close").forEach(b =>
+      b.addEventListener("click", () => closeOverlay(b.dataset.close)));
+    document.querySelectorAll(".overlay").forEach(o =>
+      o.addEventListener("click", e => { if (e.target === o) o.style.display = "none"; }));
+
+    document.getElementById("prod-qty-minus").addEventListener("click", () => {
+      prodQty = Math.max(1, prodQty - 1);
+      updateProdTotal();
+    });
+    document.getElementById("prod-qty-plus").addEventListener("click", () => {
+      prodQty = Math.min(99, prodQty + 1);
+      updateProdTotal();
+    });
+    document.getElementById("prod-add").addEventListener("click", () => {
+      if (!prodItem) return;
+      if (cart[prodItem.nama]) cart[prodItem.nama].qty += prodQty;
+      else cart[prodItem.nama] = { item: prodItem, qty: prodQty };
+      renderCart();
+      updateFloatCart();
+      flyToCart();            // animasi item terbang ke FAB
+      closeOverlay("prod");
+      showCartNotif(`${prodItem.nama} ×${prodQty} masuk keranjang`);
+    });
+
+    // notif "masuk keranjang" — muncul dari sisi FAB
+    function showCartNotif(msg) {
+      const el = document.getElementById("cart-notif");
+      el.textContent = "🛒 " + msg;
+      el.classList.remove("show", "out");
+      void el.offsetWidth;
+      el.classList.add("show");
+      clearTimeout(el._h);
+      el._h = setTimeout(() => {
+        // keluar: slide balik ke keranjang + fade
+        el.classList.remove("show");
+        el.classList.add("out");
+        setTimeout(() => { el.classList.remove("out"); }, 400);
+      }, 3000);
+    }
+
+    // item "terbang" dari tengah layar ke FAB lalu FAB bounce
+    function flyToCart() {
+      const fab = document.getElementById("float-cart");
+      const fabRect = fab.getBoundingClientRect();
+      // start dari tengah gambar produk (atas modal)
+      const img = document.getElementById("prod-img");
+      const imgBox = img && img.offsetParent ? img.getBoundingClientRect() : null;
+      const sx = imgBox ? imgBox.left + imgBox.width / 2 : window.innerWidth / 2;
+      const sy = imgBox ? imgBox.top + imgBox.height / 2 : window.innerHeight / 2;
+      const dot = document.createElement("div");
+      dot.className = "fly-dot";
+      // dot sebesar gambar produk (kalau ada), fallback 64px
+      const sz = imgBox && imgBox.height > 0 ? Math.min(imgBox.height, 300) : 64;
+      dot.style.width = sz + "px";
+      dot.style.height = sz + "px";
+      dot.style.margin = (-sz / 2) + "px 0 0 " + (-sz / 2) + "px";
+      if (prodItem && prodItem.gambar) {
+        dot.style.backgroundImage = `url('${escapeAttr(prodItem.gambar)}')`;
+        dot.style.backgroundSize = "cover";
+      }
+      dot.style.left = sx + "px";
+      dot.style.top = sy + "px";
+      document.body.appendChild(dot);
+      // target = tengah FAB
+      const dx = fabRect.left + fabRect.width / 2 - sx;
+      const dy = fabRect.top + fabRect.height / 2 - sy;
+      requestAnimationFrame(() => {
+        dot.style.transform = `translate(${dx}px, ${dy}px) scale(.2)`;
+        dot.style.opacity = "0";
+      });
+      setTimeout(() => {
+        dot.remove();
+        // bounce FAB
+        fab.classList.remove("bounce");
+        void fab.offsetWidth;
+        fab.classList.add("bounce");
+      }, 420);
+    }
+
+    // ===== Floating cart + keranjang modal =====
+    function cartCount() { return Object.values(cart).reduce((s, c) => s + c.qty, 0); }
+
+    function updateFloatCart() {
+      const n = cartCount();
+      const badge = document.getElementById("float-cart-badge");
+      badge.textContent = n;
+      // re-trigger animasi pop tiap update
+      badge.classList.remove("float-cart-badge");
+      void badge.offsetWidth;
+      badge.classList.add("float-cart-badge");
+      // animasi bounce icon saat ada item masuk
+      const fab = document.getElementById("float-cart");
+      fab.classList.remove("bounce");
+      void fab.offsetWidth;
+      fab.classList.add("bounce");
+      fab.style.display = "flex";
+      // tampil HANYA di view kasir (menu) + cart ada isi
+      const show = n > 0 && currentTab === "kasir";
+      fab.style.visibility = show ? "visible" : "hidden";
+    }
+
+    function renderCartModal() {
+      const body = document.getElementById("cart-modal-body");
+      body.innerHTML = "";
+      const names = Object.keys(cart);
+      if (!names.length) {
+        body.innerHTML = `<div style="text-align:center;color:#a0815f;padding:20px">Keranjang kosong.</div>`;
+        document.getElementById("cart-modal-total").textContent = rupiah(0);
+        return;
+      }
+      let total = 0;
+      names.forEach(nama => {
+        const { item, qty } = cart[nama];
+        const sub = Number(item.harga) * qty;
+        total += sub;
+        const row = document.createElement("div");
+        row.className = "cart-row";
+        row.innerHTML = `
+          <span class="name">${escapeHtml(nama)}</span>
+          <span class="qty">
+            <button onclick="cartQty('${cssEscape(nama)}',-1)">−</button>
+            ${qty}
+            <button onclick="cartQty('${cssEscape(nama)}',1)">+</button>
+          </span>
+          <span class="line">${rupiah(sub)}</span>
+          <button class="del" onclick="cartQty('${cssEscape(nama)}',-999)">✕</button>
+        `;
+        body.appendChild(row);
+      });
+      document.getElementById("cart-modal-total").textContent = rupiah(total);
+    }
+
+    function cartQty(nama, delta) {
+      if (!cart[nama]) return;
+      cart[nama].qty += delta;
+      if (cart[nama].qty <= 0) delete cart[nama];
+      renderCart();
+      renderCartModal();
+      updateFloatCart();
+    }
+
+    document.getElementById("float-cart").addEventListener("click", () => {
+      renderCartModal();
+      document.getElementById("cart-overlay").style.display = "flex";
+      overlayCount++;
+    });
+    document.getElementById("cart-checkout").addEventListener("click", () => {
+      if (!cartCount()) { toast("Keranjang kosong", true); return; }
+      document.getElementById("cart-overlay").style.display = "none";
+      overlayCount--;
+      openPayModal();
+    });
+
+    // ===== Modal checkout / pembayaran =====
+    let payMetode = "Tunai";
+    function openPayModal() {
+      payMetode = "Tunai";
+      const names = Object.keys(cart);
+      let sumHtml = "";
+      let total = 0;
+      names.forEach(nama => {
+        const { item, qty } = cart[nama];
+        total += Number(item.harga) * qty;
+        sumHtml += `<div>${escapeHtml(nama)} ×${qty} — ${rupiah(Number(item.harga) * qty)}</div>`;
+      });
+      document.getElementById("pay-summary").innerHTML = sumHtml;
+      document.getElementById("pay-total").textContent = rupiah(total);
+      const pmBox = document.getElementById("pay-methods");
+      // hanya metode yang aktif di pengaturan
+      const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
+        .filter(m => m.aktif)
+        .map(m => m.nama);
+      if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
+      pmBox.innerHTML = list.map(m =>
+        `<div class="pm ${m === payMetode ? "active" : ""}" data-m="${m}">${m}</div>`).join("");
+      renderPayInstr();
+      document.getElementById("pay-overlay").style.display = "flex";
+      overlayCount++;
+    }
+    document.getElementById("pay-methods").addEventListener("click", e => {
+      const el = e.target.closest(".pm");
+      if (!el) return;
+      payMetode = el.dataset.m;
+      document.querySelectorAll(".pm").forEach(p => p.classList.toggle("active", p.dataset.m === payMetode));
+      renderPayInstr();
+    });
+    // refresh daftar metode di checkout dari payCfg (dipakai setelah simpan/load config)
+    function renderPayMethods() {
+      const pmBox = document.getElementById("pay-methods");
+      if (!pmBox || !pmBox.closest(".overlay") || pmBox.closest(".overlay").style.display === "none") return;
+      const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
+        .filter(m => m.aktif)
+        .map(m => m.nama);
+      if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
+      pmBox.innerHTML = list.map(m =>
+        `<div class="pm ${m === payMetode ? "active" : ""}" data-m="${m}">${m}</div>`).join("");
+      renderPayInstr();
+    }
+    // instruksi bayar utk metode terpilih (teks + gambar QR/rekening)
+    function renderPayInstr() {
+      const box = document.getElementById("pay-instr");
+      if (!box) return;
+      const m = (payCfg.length ? payCfg : PAY_DEFAULTS).find(x => x.nama === payMetode);
+      const teks = m && m.teks;
+      const img = m && m.gambar;
+      if (!teks && !img) { box.style.display = "none"; box.innerHTML = ""; return; }
+      box.style.display = "block";
+      box.innerHTML = (teks ? `<div>${escapeHtml(teks)}</div>` : "") +
+        (img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(payMetode)}">` : "");
+    }
+    document.getElementById("pay-confirm").addEventListener("click", async () => {
+      if (!cartCount()) return;
+      const items = Object.values(cart).map(({ item, qty }) => ({ nama: item.nama, qty, harga: Number(item.harga) }));
+      const total = items.reduce((s, i) => s + i.harga * i.qty, 0);
+      const btn = document.getElementById("pay-confirm");
+      btn.disabled = true;
+      try {
+        // semua role (termasuk guest) kirim ke worker → kasir bisa lihat & konfirmasi
+        const data = await fetchJson(`${WORKER_URL}/api/order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items, total, metode: payMetode, username: session ? session.username : "guest" })
+        });
+        // guest: catat juga di localStorage — riwayat sesi sampai logout
+        if (session && session.role === "GUEST") {
+          const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: "BARU" });
+          localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+        }
+        toast(`Invoice ${data.invoice || data.id} — ${payMetode} ✓`);
+        Object.keys(cart).forEach(k => delete cart[k]);
+        renderCart();
+        renderCartModal();
+        updateFloatCart();
+        closeOverlay("pay");
+        loadMenu();
+        loadKasirHistory();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal bayar: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function addToCart(item) {
+      if (!cart[item.nama]) cart[item.nama] = { item, qty: 0 };
+      cart[item.nama].qty++;
+      renderCart();
+    }
+
+    function setQty(nama, delta) {
+      if (!cart[nama]) return;
+      cart[nama].qty += delta;
+      if (cart[nama].qty <= 0) delete cart[nama];
+      renderCart();
+    }
+
+    function renderCart() {
+      const box = document.getElementById("cart-items");
+      const empty = document.getElementById("cart-empty");
+      box.innerHTML = "";
+      let total = 0;
+      const names = Object.keys(cart);
+      names.forEach(nama => {
+        const { item, qty } = cart[nama];
+        const sub = Number(item.harga) * qty;
+        total += sub;
+        const row = document.createElement("div");
+        row.className = "cart-item";
+        row.innerHTML = `
+          <span class="name">${escapeHtml(nama)}</span>
+          <span class="qty">
+            <button onclick="setQty('${cssEscape(nama)}',-1)">−</button>
+            ${qty}
+            <button onclick="setQty('${cssEscape(nama)}',1)">+</button>
+          </span>
+          <span class="line-total">${rupiah(sub)}</span>
+        `;
+        box.appendChild(row);
+      });
+      empty.style.display = names.length ? "none" : "block";
+      document.getElementById("total").textContent = rupiah(total);
+      document.getElementById("checkout").disabled = names.length === 0;
+      updateFloatCart();
+      saveCart();
+    }
+
+    // ===== persist keranjang (tahan refresh) =====
+    function saveCart() {
+      const data = Object.values(cart).map(({ item, qty }) =>
+        ({ nama: item.nama, qty }));   // simpan cuma nama+qty, item diambil dari menu fresh
+      localStorage.setItem("cs_cart", JSON.stringify(data));
+    }
+    function restoreCart() {
+      try {
+        const data = JSON.parse(localStorage.getItem("cs_cart") || "[]");
+        data.forEach(d => {
+          const item = menu.find(m => m.nama === d.nama);
+          if (item && item.bisaJual !== false) cart[item.nama] = { item, qty: d.qty };
+        });
+        renderCart();
+      } catch (e) {
+        localStorage.removeItem("cs_cart");
+      }
+    }
+
+    // ===== Order parsing =====
+    function parseOrders(rows) {
+      // worker & mock kini return object langsung
+      return (rows || []).map(o => ({
+        id: o.id, invoice: o.invoice || o.id, waktu: o.waktu, items: o.items || [],
+        total: Number(o.total) || 0, status: (o.status || "BARU").toUpperCase(),
+        username: o.username || "guest", metode: o.metode || "Tunai"
+      })).sort((a, b) => String(b.invoice).localeCompare(String(a.invoice)));
+    }
+
+    function formatWaktu(s) {
+      if (!s) return "-";
+      const d = new Date(s);
+      return isNaN(d) ? s : d.toLocaleString("id-ID", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+    }
+
+    const STATUS_LIST = ["BARU", "DIPROSES", "SELESAI", "BATAL"];
+    const STATUS_LABEL = { "BARU": "Baru", "DIPROSES": "Diproses", "SELESAI": "Selesai", "BATAL": "Batal" };
+    function statusPill(st, id) {
+      const map = { "BARU": "st-baru", "DIPROSES": "st-diproses", "SELESAI": "st-selesai", "BATAL": "st-batal" };
+      const cls = map[st] || "st-baru";
+      const canEdit = session && (session.role === "ADMIN" || session.role === "KASIR");
+      // ADMIN: semua opsi bebas (bypass). KASIR: hanya maju + BATAL.
+      const isAdmin = session && session.role === "ADMIN";
+      // urutan maju: BARU→DIPROSES→SELESAI. BATAL = terminal (tak bisa lanjut).
+      const order = { "BARU": 0, "DIPROSES": 1, "SELESAI": 2 };
+      const curIdx = order[st] ?? 99;
+      const opts = STATUS_LIST.map(s => {
+        let disOpt = "";
+        if (!isAdmin) {
+          if (st === "BATAL") disOpt = s !== "BATAL" ? " disabled" : "";   // BATAL terminal
+          else if (s === "BATAL") disOpt = "";                              // BATAL selalu boleh dipilih
+          else if (curIdx >= (order[s] ?? 99)) disOpt = " disabled";       // mundur/sama → disable
+        }
+        return `<option value="${s}" ${s === st ? "selected" : ""}${disOpt}>${STATUS_LABEL[s]}</option>`;
+      }).join("");
+      const dis = canEdit ? "" : " disabled";
+      return `<select class="status-select ${cls}" data-id="${escapeHtml(String(id))}" title="Ubah status"${dis}>${opts}</select>`;
+    }
+
+    async function updateStatus(id, status) {
+      if (session && (session.role === "USER" || session.role === "GUEST")) { toast("Tidak punya akses ubah status", true); return; }
+      try {
+        await fetchJson(`${WORKER_URL}/api/order/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status, role: session ? session.role : "" })
+        });
+        toast(`Invoice ${id} → ${status} ✓`);
+        loadKasirHistory();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal update status: " + e.message, true);
+        loadKasirHistory();
+      }
+    }
+
+    function toast(msg, isError) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = isError ? "error" : "";
+      t.style.display = "block";
+      clearTimeout(t._h);
+      t._h = setTimeout(() => t.style.display = "none", 3000);
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    function escapeAttr(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+    function cssEscape(s) {
+      return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    // ===== Kasir filter events =====
+    document.getElementById("kasir-cats").addEventListener("click", e => {
+      const btn = e.target.closest("button[data-cat]");
+      if (!btn) return;
+      catFilter = btn.dataset.cat;
+      document.querySelectorAll("#kasir-cats button").forEach(b => b.classList.toggle("active", b.dataset.cat === catFilter));
+      renderMenu();
+    });
+    document.getElementById("kasir-search").addEventListener("input", e => {
+      qFilter = e.target.value.trim();
+      renderMenu();
+    });
+
+    document.getElementById("checkout").addEventListener("click", () => {
+      if (!cartCount()) { toast("Keranjang kosong", true); return; }
+      openPayModal();
+    });
+
+    // ===== Riwayat pesanan kasir (CRUD + balikin stok) =====
+    async function loadKasirHistory() {
+      try {
+        if (session && session.role === "GUEST") {
+          // guest: riwayat = order sesi ini (localStorage), TAPI status diambil live dari sheet
+          // biar perubahan status oleh kasir langsung terlihat.
+          const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+          const invoices = local.map(o => o.invoice);
+          const rows = await fetchJson(`${WORKER_URL}/api/orders`);
+          const sheet = parseOrders(rows).filter(o => invoices.includes(o.invoice));
+          // gabung: data lokal + status live dari sheet
+          kasirHistory = local.map(l => {
+            const s = sheet.find(x => x.invoice === l.invoice);
+            return { ...l, id: l.invoice, status: s ? s.status : l.status };
+          });
+          renderKasirHistory();
+          return;
+        }
+        const rows = await fetchJson(`${WORKER_URL}/api/orders`);
+        let all = parseOrders(rows);
+        // USER: cuma riwayat sendiri. KASIR/ADMIN: semua.
+        if (session && session.role === "USER") {
+          all = all.filter(o => (o.username || "guest") === session.username);
+        }
+        kasirHistory = all;
+        renderKasirHistory();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderKasirHistory() {
+      const body = document.getElementById("kasir-history-body");
+      const f = document.getElementById("kasir-history-filter").value;
+      const list = kasirHistory.filter(o => !f || o.status === f);
+      const isAdmin = session && session.role === "ADMIN";
+      body.innerHTML = "";
+      // toggle header kolom Aksi — cuma ADMIN lihat
+      document.querySelectorAll("#kasir-history-table th")[6].style.display = isAdmin ? "" : "none";
+      if (!list.length) {
+        body.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" style="text-align:center;color:#a0815f;padding:14px">Belum ada pesanan.</td></tr>`;
+        return;
+      }
+      list.forEach(o => {
+        const detail = o.items.map(i => `${escapeHtml(i.nama)} ×${i.qty}`).join(", ");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatWaktu(o.waktu)}</td>
+          <td><strong>${escapeHtml(String(o.invoice))}</strong></td>
+          <td>${escapeHtml(o.username || "guest")}</td>
+          <td class="items-detail">${detail || "-"}</td>
+          <td><strong>${rupiah(o.total)}</strong></td>
+          <td>${statusPill(o.status, o.id)}</td>
+          <td style="display:${isAdmin ? "" : "none"}">
+            ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${o.id}">Hapus</button>` : ""}
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    async function kasirAction(act, id) {
+      if (!session || session.role === "USER" || session.role === "GUEST") {
+        toast("Tidak punya akses batal/hapus", true); return;
+      }
+      // KASIR cuma boleh batal (balikin stok), tak boleh hapus permanen
+      if (act === "delete" && session.role !== "ADMIN") {
+        toast("Hanya ADMIN yang bisa hapus riwayat", true); return;
+      }
+      try {
+        const res = await fetchJson(`${WORKER_URL}/api/order/${id}/${act}`, {
+          method: "POST"
+        });
+        toast(act === "cancel" ? `Invoice ${id} dibatalkan, stok balik ✓` : `Invoice ${id} dihapus ✓`);
+        loadKasirHistory();
+        loadMenu();       // porsi kasir update
+      } catch (e) {
+        console.error(e);
+        toast("Gagal: " + e.message, true);
+      }
+    }
+
+    // ubah status di kasir riwayat (kasir/admin) → simpan
+    document.getElementById("kasir-history-body").addEventListener("change", e => {
+      const sel = e.target.closest(".status-select");
+      if (!sel) return;
+      sel.disabled = true;
+      updateStatus(sel.dataset.id, sel.value).finally(() => {
+        sel.disabled = false;
+        loadKasirHistory();
+      });
+    });
+
+    document.getElementById("kasir-history-body").addEventListener("click", e => {
+      const btn = e.target.closest(".hist-btn");
+      if (!btn) return;
+      const { act, id } = btn.dataset;
+      if (act === "cancel" && !confirm(`Batalkan order #${id}? Stok bahan akan dikembalikan.`)) return;
+      if (act === "delete" && !confirm(`Hapus order #${id} permanen?`)) return;
+      kasirAction(act, id);
+    });
+    document.getElementById("kasir-history-filter").addEventListener("change", renderKasirHistory);
+    document.getElementById("kasir-history-refresh").addEventListener("click", loadKasirHistory);
+
+    let kasirHistory = [];
+    applySession();   // cek session → login atau langsung masuk
+  </script>
+</body>
+</html>

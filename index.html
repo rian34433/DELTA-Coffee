@@ -561,8 +561,7 @@
 
   <script>
     // ===== URL Worker. Default cloudflare, override via ?worker= untuk test lokal =====
-    const WORKER_URL = new URLSearchParams(location.search).get("worker") ||
-                       "delta-coffee.rian34433.workers.dev";
+    const WORKER_URL = "delta-coffee.rian34433.workers.dev";
     // =================================================================================
 
     const cart = {};  // { [nama]: { item, qty } }

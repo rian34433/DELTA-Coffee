@@ -37,6 +37,7 @@
     }
     .mini-btn:hover { background: #f0e6d6; }
     .rec-input { width: 100%; min-width: 90px; padding: 6px 8px; border: 1px solid #d8c7b2; border-radius: 6px; background: #fff; }
+    #resep-table input[data-field="jumlah"] { min-width: 0; }
     .img-upload { display: flex; align-items: center; gap: 6px; }
     .img-upload .thumb {
       width: 40px; height: 40px; border-radius: 6px; object-fit: cover;
@@ -164,6 +165,14 @@
     .prod-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px 8px; }
     .prod-header h3 { margin: 0; color: #6b3f24; }
     .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #a0815f; }
+    .prod-page-top .modal-close {
+      background: #6b3f24; color: #fff;
+      border: none; border-radius: 8px;
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+      line-height: 1; padding: 0;
+    }
     .prod-body { padding: 0 18px; }
     .prod-kategori { color: #a0815f; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; }
     .prod-desc { color: #6b5b4e; font-size: .9rem; margin: 6px 0; }
@@ -173,6 +182,30 @@
     .qty-picker { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
     .qty-picker button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #d8c7b2; background: #faf6ef; font-size: 1.1rem; cursor: pointer; }
     .qty-picker span { font-size: 1.1rem; font-weight: 700; min-width: 24px; text-align: center; }
+    /* size picker buttons in detail modal — segmented minimalis */
+    #prod-sizes { display: flex; gap: 8px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+    .size-btn {
+      flex: 1; min-width: 54px; max-width: 90px;
+      padding: 8px 6px;
+      border: 1.5px solid #e0d3c3;
+      border-radius: 10px;
+      background: #faf6ef;
+      color: #7a5c44;
+      font-weight: 600;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+      line-height: 1.3;
+      white-space: nowrap;
+      letter-spacing: .01em;
+    }
+    .size-btn:hover:not(.disabled) { border-color: #2b7a4b; color: #2b7a4b; background: #f0faf4; }
+    .size-btn.active { border-color: #2b7a4b; background: #2b7a4b; color: #fff; box-shadow: 0 2px 8px #2b7a4b33; }
+    .size-btn.disabled { opacity: .38; cursor: not-allowed; }
+    .size-price { display: block; font-size: .72rem; font-weight: 500; margin-top: 2px; opacity: .85; }
+    .size-btn.active .size-price { opacity: .9; }
+    .size-badge { display: block; font-size: .65rem; font-weight: 500; margin-top: 2px; color: #c0392b; }
+    .size-btn.active .size-badge { color: #ffccc7; }
     .prod-add, .modal-buy { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #2b7a4b; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 0; }
     .prod-add { border-radius: 0 0 16px 16px; }
 
@@ -293,6 +326,7 @@
       <div class="kasir-tools">
         <input type="text" id="kasir-search" placeholder="🔍 Cari menu...">
         <div id="kasir-cats" class="cat-chips"></div>
+        <button id="custom-order-btn" class="mini-btn" style="background:#6b3f24;color:#fff;margin-top:8px;display:none">✏️ Custom Order</button>
       </div>
       <div class="layout">
         <div class="menu" id="menu"></div>
@@ -357,7 +391,7 @@
           </div>
           <div class="table-scroll">
             <table class="orders" id="menu-table">
-              <thead><tr><th>Nama</th><th>Kategori</th><th>Harga Jual</th><th>Deskripsi</th><th>Markup</th><th>Gambar URL</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Nama</th><th>Kategori</th><th>Harga Jual</th><th>Deskripsi</th><th>Gambar URL</th><th>Status</th><th></th></tr></thead>
               <tbody id="menu-body"></tbody>
             </table>
           </div>
@@ -405,6 +439,7 @@
           </div>
           <div class="table-scroll">
             <table class="orders" id="resep-table">
+              <colgroup><col style="width:55%"><col style="width:45%"><col style="width:72px"><col style="width:32px"></colgroup>
               <thead><tr><th>Menu</th><th>Bahan</th><th>Jumlah</th><th></th></tr></thead>
               <tbody id="resep-body"></tbody>
             </table>
@@ -457,7 +492,7 @@
   <!-- ===== Halaman Detail Produk (fullscreen, ala Shopee) ===== -->
   <div class="overlay prod-page" id="prod-overlay" style="display:none">
     <div class="prod-page-top">
-      <button class="modal-close" data-close="prod">←</button>
+      <button class="modal-close" data-close="prod"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
       <h3 id="prod-nama"></h3>
       <span style="width:24px"></span>
     </div>
@@ -468,6 +503,7 @@
       <div class="prod-margin" id="prod-margin"></div>
       <div class="prod-desc" id="prod-desc"></div>
       <div class="prod-stok" id="prod-stok"></div>
+      <div id="prod-sizes" style="display:none"></div>
       <div class="qty-picker">
         <span>Jumlah</span>
         <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
@@ -516,6 +552,40 @@
     </div>
   </div>
 
+  <!-- ===== Modal Custom Order ===== -->
+  <div class="overlay" id="custom-order-overlay" style="display:none">
+    <div class="modal" style="max-width:480px">
+      <div class="prod-header">
+        <h3>✏️ Custom Order</h3>
+        <button class="modal-close" data-close="custom-order">✕</button>
+      </div>
+      <div class="prod-body" style="padding:0 18px 18px">
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Nama Pesanan</label>
+        <input class="rec-input" id="co-nama" placeholder="cth: Es Kopi Susu Spesial" style="width:100%;box-sizing:border-box">
+
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:14px 0 3px">Bahan &amp; Jumlah</label>
+        <div id="co-bahan-list"></div>
+        <button id="co-add-bahan" class="mini-btn" style="margin-top:6px;background:#6b3f24;color:#fff">+ Tambah Bahan</button>
+
+        <div style="margin-top:14px;padding:10px 12px;background:#f7f3ee;border-radius:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:.85rem;color:#a0815f">Harga Modal (FIFO)</span>
+            <span id="co-modal-preview" style="font-weight:700;color:#2b7a4b">—</span>
+          </div>
+        </div>
+
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:14px 0 3px">Harga Jual (Rp)</label>
+        <input class="rec-input" id="co-harga-jual" type="number" placeholder="masukkan harga jual" style="width:100%;box-sizing:border-box">
+
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:14px 0 3px">Metode Pembayaran</label>
+        <select class="rec-input" id="co-metode" style="width:100%;box-sizing:border-box"></select>
+
+        <div id="co-error" style="color:#c0392b;font-size:.82rem;margin-top:8px;display:none"></div>
+        <button id="co-submit" class="modal-buy" style="margin-top:16px">Buat Pesanan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Modal Edit Log Bahan ===== -->
   <div class="overlay" id="log-edit-overlay" style="display:none">
     <div class="modal" style="max-width:360px">
@@ -561,7 +631,35 @@
 
   <script>
     // ===== URL Worker. Default cloudflare, override via ?worker= untuk test lokal =====
-    const WORKER_URL = "https://delta-coffee.rian34433.workers.dev";
+    // Prioritas: ?worker= > localStorage > fallback ke Cloudflare
+    let WORKER_URL_LOCAL = null;
+
+    function initWorkerURL() {
+      // 1. Cek ?worker= di URL
+      const urlWorker = new URLSearchParams(location.search).get("worker");
+      if (urlWorker) {
+        WORKER_URL_LOCAL = urlWorker;
+        simpanWorkerURL(urlWorker);
+        return;
+      }
+      // 2. Cek localStorage (diseset oleh login/sesion sebelumnya)
+      const ls = localStorage.getItem("cs_worker_url");
+      if (ls) {
+        WORKER_URL_LOCAL = ls;
+        return;
+      }
+      // 3. Fallback ke Cloudflare (hanya untuk produksi, local test pake ?worker=)
+      WORKER_URL_LOCAL = "https://delta-coffee.rian34433.workers.dev";
+    }
+
+    function simpanWorkerURL(url) {
+      try {
+        localStorage.setItem("cs_worker_url", url);
+      } catch(e) {}
+    }
+
+    initWorkerURL();
+    const WORKER_URL = WORKER_URL_LOCAL;
     // =================================================================================
 
     const cart = {};  // { [nama]: { item, qty } }
@@ -573,7 +671,18 @@
     function toPerUnit(hargaBeli, isi) {
       const h = Number(hargaBeli);
       if (isNaN(h) || h <= 0) return 0;
-      const m = String(isi || "").toLowerCase().match(/([\d.,]+)\s*(ml|gr|g)?/);
+      let s = String(isi || "").toLowerCase();
+      const hasMl = s.includes("ml");
+      const hasGr = s.includes("gr") || s.includes("g");
+      if (hasMl && hasGr) return 0;
+      if (!hasMl && !hasGr) {
+        const m = s.match(/([\d.,]+)/);
+        if (!m) return 0;
+        const qty = parseFloat(m[1].replace(",", "."));
+        if (!(qty > 0)) return 0;
+        return h / qty;
+      }
+      const m = s.match(/([\d.,]+)\s*(ml|gr|g)?/);
       if (!m) return 0;
       const qty = parseFloat(m[1].replace(",", "."));
       if (!(qty > 0)) return 0;
@@ -628,7 +737,7 @@
 
     // ===== Admin sub-tabs: Menu & Harga | Bahan | Resep =====
     let recipeState = { bahan: [], resep: [] };   // {id, nama, harga} / {id, nama, bahan, jumlah}
-    let menuState = [];                          // {id, nama, kategori, harga_jual, deskripsi, markup}
+    let menuState = [];                          // {id, nama, kategori, harga_jual, deskripsi}
 
     const subMenu = document.getElementById("sub-menu");
     const subBahan = document.getElementById("sub-bahan");
@@ -678,9 +787,8 @@
         tr.innerHTML = `
           <td><input class="rec-input" data-field="nama" data-id="${m.id}" value="${escapeAttr(m.nama || "")}"></td>
           <td><input class="rec-input" data-field="kategori" data-id="${m.id}" value="${escapeAttr(m.kategori || "")}"></td>
-          <td><input class="rec-input" data-field="harga_jual" data-id="${m.id}" type="number" value="${escapeAttr(m.harga_jual ?? "")}" placeholder="auto"></td>
+          <td><input class="rec-input" data-field="harga_jual" data-id="${m.id}" type="number" value="${escapeAttr(m.harga_jual ?? "")}" placeholder="Rp"></td>
           <td><input class="rec-input" data-field="deskripsi" data-id="${m.id}" value="${escapeAttr(m.deskripsi || "")}"></td>
-          <td><input class="rec-input" data-field="markup" data-id="${m.id}" type="number" value="${escapeAttr(m.markup ?? "")}" placeholder="3"></td>
           <td>
             <div class="img-upload">
               <img class="thumb ${m.gambar ? "" : "hidden"}" data-id="${m.id}" src="${escapeAttr(m.gambar || "")}" alt="">
@@ -704,7 +812,7 @@
     }
 
     document.getElementById("menu-add").addEventListener("click", () => {
-      menuState.push({ id: `m${Date.now()}`, nama: "", kategori: "", harga_jual: "", deskripsi: "", markup: "", gambar: "", status: "" });
+      menuState.push({ id: `m${Date.now()}`, nama: "", kategori: "", harga_jual: "", deskripsi: "", gambar: "", status: "" });
       renderMenuEditor();
     });
 
@@ -938,14 +1046,18 @@
       resepSorted.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><input class="rec-input" data-field="nama" data-id="${r.id}" value="${escapeAttr(r.nama || "")}" list="menu-list"></td>
-          <td><input class="rec-input" data-field="bahan" data-id="${r.id}" value="${escapeAttr(r.bahan || "")}" list="bahan-list"></td>
+          <td><input class="rec-input" data-field="nama" data-id="${r.id}" value="${escapeAttr(r.nama || "")}" list="menu-list" autocomplete="off"></td>
+          <td><input class="rec-input" data-field="bahan" data-id="${r.id}" value="${escapeAttr(r.bahan || "")}" list="bahan-list" autocomplete="off" placeholder="Pilih bahan..."></td>
           <td><input class="rec-input" data-field="jumlah" data-id="${r.id}" type="number" value="${escapeAttr(r.jumlah ?? "")}"></td>
           <td><button class="rec-del" data-type="resep" data-id="${r.id}">✕</button></td>
         `;
         resepBody.appendChild(tr);
       });
 
+      updateDatalists();
+    }
+
+    function updateDatalists() {
       // datalist autocomplete nama menu (A-Z, unik) — dari resep & menu
       let dlMenu = document.getElementById("menu-list");
       if (!dlMenu) {
@@ -954,19 +1066,23 @@
         document.body.appendChild(dlMenu);
       }
       const menuNames = [...new Set([
-        ...recipeState.resep.map(r => (r.nama || "").trim()).filter(Boolean),
-        ...menuState.map(m => (m.nama || "").trim()).filter(Boolean)
+        ...(recipeState.resep || []).map(r => (r.nama || "").trim()).filter(Boolean),
+        ...(menuState || []).map(m => (m.nama || "").trim()).filter(Boolean)
       ])].sort((a, b) => a.localeCompare(b, "id"));
-      dlMenu.innerHTML = menuNames.map(n => `<option value="${escapeAttr(n)}">`).join("");
+      dlMenu.innerHTML = menuNames.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
 
-      // datalist autocomplete bahan
+      // datalist autocomplete bahan (A-Z, unik) — dari bahan & resep
       let dl = document.getElementById("bahan-list");
       if (!dl) {
         dl = document.createElement("datalist");
         dl.id = "bahan-list";
         document.body.appendChild(dl);
       }
-      dl.innerHTML = recipeState.bahan.map(b => `<option value="${escapeAttr(b.nama)}">`).join("");
+      const bahanNames = [...new Set([
+        ...(recipeState.bahan || []).map(b => (b.nama || "").trim()).filter(Boolean),
+        ...(recipeState.resep || []).map(r => (r.bahan || "").trim()).filter(Boolean)
+      ])].sort((a, b) => a.localeCompare(b, "id"));
+      dl.innerHTML = bahanNames.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
     }
 
     // edit inline — simpan ke state
@@ -987,7 +1103,24 @@
           if (td) td.textContent = perUnitPreview(obj);
         }
       }
+      if (field === "nama" || field === "bahan") {
+        updateDatalists();
+      }
     }
+
+    // buka popup autocomplete saat fokus/klik pada input yang punya datalist di tabel resep
+    document.addEventListener("focusin", e => {
+      const inp = e.target.closest("#resep-table input[list]");
+      if (inp && typeof inp.showPicker === "function") {
+        try { inp.showPicker(); } catch (err) {}
+      }
+    });
+    document.addEventListener("click", e => {
+      const inp = e.target.closest("#resep-table input[list]");
+      if (inp && typeof inp.showPicker === "function") {
+        try { inp.showPicker(); } catch (err) {}
+      }
+    });
     document.addEventListener("input", e => {
       const inp = e.target.closest(".rec-input");
       if (!inp) return;
@@ -1338,9 +1471,186 @@
       const isAdmin = role === "ADMIN";
       document.getElementById("dd-setting").style.display = isAdmin ? "" : "none";
 
+      // Tombol Custom Order: hanya KASIR & ADMIN
+      const showCustom = role === "KASIR" || role === "ADMIN";
+      document.getElementById("custom-order-btn").style.display = showCustom ? "" : "none";
+
       // USER: sembunyikan aksi batal/hapus riwayat (kasir riwayat cuma view)
       // (di-render via renderKasirHistory)
     }
+
+    // ===== Custom Order =====
+    let coRecipeData = null;  // cache recipedata { bahan, resep }
+    let coCalcTimer = null;
+
+    function openCustomOrder() {
+      document.getElementById("co-nama").value = "";
+      document.getElementById("co-harga-jual").value = "";
+      document.getElementById("co-modal-preview").textContent = "—";
+      document.getElementById("co-error").style.display = "none";
+      document.getElementById("co-bahan-list").innerHTML = "";
+      // Isi select metode dari payConfig
+      const sel = document.getElementById("co-metode");
+      sel.innerHTML = "";
+      (payCfg || []).filter(m => m.aktif !== false && m.aktif !== "false")
+        .forEach(m => { const o = document.createElement("option"); o.value = m.id || m.nama; o.textContent = m.nama; sel.appendChild(o); });
+      if (!sel.options.length) { const o = document.createElement("option"); o.value = "Tunai"; o.textContent = "Tunai"; sel.appendChild(o); }
+      addCoBahanRow();
+      document.getElementById("custom-order-overlay").style.display = "flex";
+      document.body.classList.add("modal-open");
+      overlayCount++;
+      // muat recipedata untuk daftar bahan tersedia
+      if (!coRecipeData) {
+        fetchJson(`${WORKER_URL}/api/recipedata`).then(d => {
+          coRecipeData = d;
+          updateCoDatalist();
+          document.querySelectorAll(".co-bahan-row").forEach(r => updateCoUnit(r));
+        }).catch(() => {});
+      } else {
+        updateCoDatalist();
+      }
+    }
+
+    function addCoBahanRow() {
+      const list = document.getElementById("co-bahan-list");
+      const row = document.createElement("div");
+      row.className = "co-bahan-row";
+      row.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:6px";
+      row.innerHTML = `
+        <input class="rec-input co-bahan-input" list="bahan-list" placeholder="Pilih/ketik bahan..." autocomplete="off" style="flex:1;min-width:0">
+        <input class="rec-input co-bahan-qty" type="number" min="0.1" step="0.1" placeholder="gr/ml" style="width:90px">
+        <span class="co-bahan-unit" style="font-size:.78rem;color:#a0815f;width:28px"></span>
+        <button class="mini-btn co-del-btn" style="background:#fef0f0;color:#c0392b;padding:4px 8px;flex-shrink:0">✕</button>
+      `;
+      const inpBahan = row.querySelector(".co-bahan-input");
+      row.querySelector(".co-del-btn").addEventListener("click", () => { row.remove(); scheduleCoCalc(); });
+      inpBahan.addEventListener("input", () => { updateCoUnit(row); scheduleCoCalc(); });
+      inpBahan.addEventListener("change", () => { updateCoUnit(row); scheduleCoCalc(); });
+      inpBahan.addEventListener("focusin", e => {
+        if (typeof e.target.showPicker === "function") {
+          try { e.target.showPicker(); } catch (err) {}
+        }
+      });
+      inpBahan.addEventListener("click", e => {
+        if (typeof e.target.showPicker === "function") {
+          try { e.target.showPicker(); } catch (err) {}
+        }
+      });
+      row.querySelector(".co-bahan-qty").addEventListener("input", () => scheduleCoCalc());
+      list.appendChild(row);
+      updateCoDatalist();
+    }
+
+    function updateCoDatalist() {
+      let dl = document.getElementById("bahan-list");
+      if (!dl) {
+        dl = document.createElement("datalist");
+        dl.id = "bahan-list";
+        document.body.appendChild(dl);
+      }
+      const allBahan = [
+        ...(coRecipeData?.bahan || []),
+        ...(recipeState?.bahan || []),
+        ...(coRecipeData?.resep || []),
+        ...(recipeState?.resep || [])
+      ];
+      const bahanNames = [...new Set(allBahan.map(b => (b.nama || b.bahan || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "id"));
+      if (bahanNames.length) {
+        dl.innerHTML = bahanNames.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+      }
+    }
+
+    function updateCoUnit(row) {
+      if (!row) return;
+      const inp = row.querySelector(".co-bahan-input");
+      const unitEl = row.querySelector(".co-bahan-unit");
+      if (!inp || !unitEl) return;
+      const val = inp.value.trim().toLowerCase();
+      const bahanList = [
+        ...(coRecipeData?.bahan || []),
+        ...(recipeState?.bahan || [])
+      ];
+      const bahan = bahanList.find(b => (b.nama || "").trim().toLowerCase() === val);
+      if (!bahan) { unitEl.textContent = ""; return; }
+      unitEl.textContent = isiUnitLabel(bahan.isi) || "";
+    }
+
+    function scheduleCoCalc() {
+      clearTimeout(coCalcTimer);
+      coCalcTimer = setTimeout(doCoCalc, 400);
+    }
+
+    async function doCoCalc() {
+      const bahans = getCoBahans();
+      if (!bahans.length) { document.getElementById("co-modal-preview").textContent = "—"; return; }
+      try {
+        const data = await fetchJson(`${WORKER_URL}/api/custom-order/calc`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bahan: bahans })
+        });
+        document.getElementById("co-modal-preview").textContent = rupiah(data.hargaModal || 0);
+      } catch (e) {
+        document.getElementById("co-modal-preview").textContent = "—";
+      }
+    }
+
+    function getCoBahans() {
+      const result = [];
+      const bahanList = [
+        ...(coRecipeData?.bahan || []),
+        ...(recipeState?.bahan || [])
+      ];
+      document.querySelectorAll(".co-bahan-row").forEach(row => {
+        const inp = row.querySelector(".co-bahan-input");
+        let nama = (inp?.value || "").trim();
+        const jumlah = parseFloat(row.querySelector(".co-bahan-qty").value);
+        if (nama && jumlah > 0) {
+          const matched = bahanList.find(b => (b.nama || "").trim().toLowerCase() === nama.toLowerCase());
+          if (matched && matched.nama) nama = matched.nama;
+          result.push({ nama, jumlah });
+        }
+      });
+      return result;
+    }
+
+    document.getElementById("custom-order-btn").addEventListener("click", openCustomOrder);
+    document.getElementById("co-add-bahan").addEventListener("click", addCoBahanRow);
+
+    document.getElementById("co-submit").addEventListener("click", async () => {
+      const nama = document.getElementById("co-nama").value.trim();
+      const hargaJual = Number(document.getElementById("co-harga-jual").value);
+      const metode = document.getElementById("co-metode").value;
+      const bahans = getCoBahans();
+      const errEl = document.getElementById("co-error");
+      errEl.style.display = "none";
+
+      if (!nama) { errEl.textContent = "Nama pesanan wajib diisi"; errEl.style.display = ""; return; }
+      if (!bahans.length) { errEl.textContent = "Tambah minimal 1 bahan"; errEl.style.display = ""; return; }
+      if (!(hargaJual > 0)) { errEl.textContent = "Harga jual wajib diisi (> 0)"; errEl.style.display = ""; return; }
+
+      const btn = document.getElementById("co-submit");
+      btn.disabled = true;
+      try {
+        const data = await fetchJson(`${WORKER_URL}/api/custom-order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nama, bahan: bahans, hargaJual, metode, username: session ? session.username : "guest" })
+        });
+        toast(`Invoice ${data.invoice} — Custom Order ✓`);
+        document.getElementById("custom-order-overlay").style.display = "none";
+        if (overlayCount > 0) overlayCount--;
+        if (overlayCount <= 0) { overlayCount = 0; document.body.classList.remove("modal-open"); }
+        loadMenu();
+        loadKasirHistory();
+      } catch (e) {
+        errEl.textContent = "Gagal: " + e.message;
+        errEl.style.display = "";
+      } finally {
+        btn.disabled = false;
+      }
+    });
     let currentTab = "kasir";
     let subCur = "menu";
 
@@ -1466,61 +1776,142 @@
       );
     }
 
+    // parse grouped menu: "Base Name|Size" → group by base name
+    function getGroupedMenu() {
+      const groups = {};
+      filteredMenu().forEach(item => {
+        const parts = (item.nama || "").split("|").map(s => s.trim());
+        const base = parts[0].trim();
+        const size = parts[1]?.trim() || "";
+        if (!groups[base]) {
+          groups[base] = { baseNama: base, kategori: item.kategori, gambar: item.gambar, comingSoon: item.comingSoon, variants: [] };
+        }
+        groups[base].variants.push({
+          size,
+          nama: item.nama,
+          harga: item.harga,
+          deskripsi: item.deskripsi,
+          modal: item.modal,
+          porsi: item.porsi,
+          bisaJual: item.bisaJual,
+          kekurangan: item.kekurangan
+        });
+      });
+      // sort variants: S, M, L, then others
+      const sizeOrder = { "S": 0, "M": 1, "L": 2, "XL": 3 };
+      Object.values(groups).forEach(g => {
+        g.variants.sort((a, b) => (sizeOrder[a.size] ?? 99) - (sizeOrder[b.size] ?? 99));
+      });
+      return Object.values(groups);
+    }
+
     function renderMenu() {
       const box = document.getElementById("menu");
       box.innerHTML = "";
-      filteredMenu().forEach((item, i) => {
+      const grouped = getGroupedMenu();
+      grouped.forEach((group, i) => {
         const div = document.createElement("div");
-        const coming = !!item.comingSoon;
-        div.className = "card" + (coming ? " coming-soon-card" : (item.bisaJual === false ? " soldout" : ""));
-        div.style.animationDelay = Math.min(i * 0.035, 0.6) + "s";   // stagger masuk
-        const modal = Number(item.modal) || 0;
-        const profit = (Number(item.harga) || 0) - modal;
-        const porsi = Number(item.porsi) || 0;
+        const coming = !!group.comingSoon;
+        // ambil variant pertama untuk info card
+        const mainVar = group.variants[0];
+        const porsi = Number(mainVar.porsi) || 0;
+        div.className = "card" + (coming ? " coming-soon-card" : (mainVar.bisaJual === false ? " soldout" : ""));
+        div.style.animationDelay = Math.min(i * 0.035, 0.6) + "s";
+        const sizes = group.variants.map(v => v.size).filter(Boolean).join(" / ");
         div.innerHTML = `
-          ${item.gambar ? `<div class="card-img"><img src="${escapeAttr(item.gambar)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=noimg>☕</div>'"></div>` : `<div class="card-img"><div class="noimg">☕</div></div>`}
-          <span class="cat">${escapeHtml(item.kategori || "")}</span>
-          <h3>${escapeHtml(item.nama)}</h3>
-          <div class="desc">${escapeHtml(item.deskripsi || "")}</div>
+          ${group.gambar ? `<div class="card-img"><img src="${escapeAttr(group.gambar)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=noimg>☕</div>'"></div>` : `<div class="card-img"><div class="noimg">☕</div></div>`}
+          <span class="cat">${escapeHtml(group.kategori || "")}</span>
+          <h3>${escapeHtml(group.baseNama)}</h3>
+          ${sizes ? `<div class="desc">Ukuran: ${escapeHtml(sizes)}</div>` : ""}
           ${coming
             ? `<div class="coming-soon-badge">🚀 Coming Soon</div>`
-            : `<div class="price">${rupiah(Number(item.harga) || 0)}<span class="stok-info"> · stok ${porsi}</span></div>
-               ${session && session.role === "ADMIN" && modal ? `<div class="margin">modal ${rupiah(modal)} · untung ${rupiah(profit)}</div>` : ""}
-               ${!item.bisaJual ? `<div class="shortage">⚠ ${escapeHtml((item.kekurangan || []).join(", "))}</div>` : ""}`
+            : `<div class="price">${rupiah(Number(mainVar.harga) || 0)}<span class="stok-info"> · stok ${porsi}</span></div>
+               ${group.variants.length > 1 ? `<div class="margin">Mulai ${rupiah(Math.min(...group.variants.map(v => Number(v.harga) || 0)))}</div>` : ""}
+               ${!mainVar.bisaJual ? `<div class="shortage">⚠ ${escapeHtml((mainVar.kekurangan || []).join(", "))}</div>` : ""}`
           }
         `;
-        div.addEventListener("click", () => { if (!coming && item.bisaJual !== false) openProduct(item); });
+        div.addEventListener("click", () => { if (!coming && mainVar.bisaJual !== false) openProduct(group); });
         box.appendChild(div);
       });
     }
 
     // ===== Modal Detail Produk =====
-    let prodItem = null, prodQty = 1;
-    function openProduct(item) {
-      prodItem = item;
-      prodQty = 1;
-      document.getElementById("prod-nama").textContent = item.nama;
-      document.getElementById("prod-kategori").textContent = item.kategori || "";
-      document.getElementById("prod-desc").textContent = item.deskripsi || "";
-      const porsi = Number(item.porsi) || 0;
-      document.getElementById("prod-stok").textContent = "Stok tersedia: " + porsi + " porsi";
-      document.getElementById("prod-harga").textContent = rupiah(Number(item.harga) || 0);
-      const modal = Number(item.modal) || 0;
-      const isAdmin = session && session.role === "ADMIN";
-      document.getElementById("prod-margin").textContent = isAdmin && modal ? `Modal ${rupiah(modal)} · untung ${rupiah((Number(item.harga)||0) - modal)}` : "";
+    let prodItem = null, prodQty = 1, prodSize = "", prodHarga = 0;
+    function openProduct(group) {
+      // group = { baseNama, kategori, gambar, comingSoon, variants: [{size, nama, harga, deskripsi, modal, porsi, bisaJual, kekurangan}] }
+      prodItem = group;
+      // pilih default size: yang punya stok, fallback ke pertama
+      const avail = group.variants.filter(v => v.bisaJual !== false);
+      const defaultVar = avail.length ? avail[0] : group.variants[0];
+      setSelectedVariant(defaultVar);
+
+      document.getElementById("prod-nama").textContent = group.baseNama;
+      document.getElementById("prod-kategori").textContent = group.kategori || "";
       // gambar
       const imgBox = document.getElementById("prod-img");
-      imgBox.innerHTML = item.gambar
-        ? `<img src="${escapeAttr(item.gambar)}" onerror="this.outerHTML='<div class=noimg>☕</div>'">`
+      imgBox.innerHTML = group.gambar
+        ? `<img src="${escapeAttr(group.gambar)}" onerror="this.outerHTML='<div class=noimg>☕</div>'">`
         : `<div class="noimg">☕</div>`;
-      updateProdTotal();
+
+      renderSizePicker();
       document.getElementById("prod-overlay").style.display = "flex";
       document.body.classList.add("modal-open");
     }
 
+    function setSelectedVariant(v) {
+      prodSize = v.size;
+      prodHarga = Number(v.harga) || 0;
+      // update UI fields
+      document.getElementById("prod-desc").textContent = v.deskripsi || "";
+      const porsi = Number(v.porsi) || 0;
+      document.getElementById("prod-stok").textContent = "Stok tersedia: " + porsi + " porsi" + (v.size ? ` (${v.size})` : "");
+      document.getElementById("prod-harga").textContent = rupiah(Number(v.harga) || 0);
+      const modal = Number(v.modal) || 0;
+      const isAdmin = session && session.role === "ADMIN";
+      document.getElementById("prod-margin").textContent = isAdmin && modal ? `Modal ${rupiah(modal)} · untung ${rupiah((Number(v.harga)||0) - modal)}` : "";
+      // qty reset
+      prodQty = 1;
+      updateProdTotal();
+      // highlight size button
+      document.querySelectorAll(".size-btn").forEach(btn =>
+        btn.classList.toggle("active", btn.dataset.size === v.size));
+      // disable add to cart kalau tidak bisa jual
+      const addBtn = document.getElementById("prod-add");
+      addBtn.disabled = v.bisaJual === false;
+      addBtn.textContent = v.bisaJual === false ? "Habis" : "+ Keranjang";
+    }
+
+    function renderSizePicker() {
+      const box = document.getElementById("prod-sizes");
+      if (!box) return;
+      const variants = prodItem.variants || [];
+      if (variants.length <= 1) {
+        box.style.display = "none";
+        return;
+      }
+      box.style.display = "flex";
+      box.innerHTML = variants.map(v => `
+        <button class="size-btn ${v.bisaJual === false ? "disabled" : ""}"
+                data-size="${escapeAttr(v.size)}"
+                data-var='${JSON.stringify(v).replace(/'/g, "&apos;")}'
+                ${v.bisaJual === false ? "disabled" : ""}>
+          ${escapeHtml(v.size)}
+          <span class="size-price">${rupiah(Number(v.harga) || 0)}</span>
+          ${v.bisaJual === false ? '<span class="size-badge">Habis</span>' : ''}
+        </button>
+      `).join("");
+    }
+
+    document.addEventListener("click", e => {
+      const btn = e.target.closest(".size-btn:not(.disabled)");
+      if (!btn) return;
+      const v = JSON.parse(btn.dataset.var.replace(/&apos;/g, "'"));
+      setSelectedVariant(v);
+    });
+
     function updateProdTotal() {
       document.getElementById("prod-qty").textContent = prodQty;
-      if (prodItem) document.getElementById("prod-add-total").textContent = rupiah(Number(prodItem.harga) * prodQty);
+      if (prodItem) document.getElementById("prod-add-total").textContent = rupiah(prodHarga * prodQty);
     }
     // counter overlay terbuka — body di-lock selama ≥1 overlay aktif
     let overlayCount = 0;
@@ -1545,13 +1936,15 @@
     });
     document.getElementById("prod-add").addEventListener("click", () => {
       if (!prodItem) return;
-      if (cart[prodItem.nama]) cart[prodItem.nama].qty += prodQty;
-      else cart[prodItem.nama] = { item: prodItem, qty: prodQty };
+      // key untuk cart: baseNama + "|" + size (kalau ada)
+      const cartKey = prodItem.baseNama + (prodSize ? "|" + prodSize : "");
+      if (cart[cartKey]) cart[cartKey].qty += prodQty;
+      else cart[cartKey] = { item: { ...prodItem, nama: cartKey, _baseNama: prodItem.baseNama, _size: prodSize, harga: prodItem.variants.find(v => v.size === prodSize)?.harga || 0, deskripsi: prodItem.variants.find(v => v.size === prodSize)?.deskripsi || "" }, qty: prodQty };
       renderCart();
       updateFloatCart();
-      flyToCart();            // animasi item terbang ke FAB
+      flyToCart();
       closeOverlay("prod");
-      showCartNotif(`${prodItem.nama} ×${prodQty} masuk keranjang`);
+      showCartNotif(`${prodItem.baseNama}${prodSize ? " " + prodSize : ""} ×${prodQty} masuk keranjang`);
     });
 
     // notif "masuk keranjang" — muncul dari sisi FAB
@@ -1828,8 +2221,21 @@
       try {
         const data = JSON.parse(localStorage.getItem("cs_cart") || "[]");
         data.forEach(d => {
-          const item = menu.find(m => m.nama === d.nama);
-          if (item && item.bisaJual !== false) cart[item.nama] = { item, qty: d.qty };
+          // cari item di menu (handle grouped items)
+          let item = menu.find(m => m.nama === d.nama);
+          if (!item && d.nama.includes("|")) {
+            // grouped item: base|size
+            const [base, size] = d.nama.split("|");
+            const baseItem = menu.find(m => m.nama === base);
+            if (baseItem && baseItem.variants) {
+              item = baseItem.variants.find(v => v.size === size);
+              if (item) item = { ...item, _baseNama: base, _size: size };
+            }
+          }
+          if (item && (item.bisaJual !== false)) {
+            const cartKey = d.nama;
+            cart[cartKey] = { item: { ...item, nama: cartKey, _baseNama: item._baseNama || item.nama.split("|")[0], _size: item._size || d.nama.split("|")[1] || "" }, qty: d.qty };
+          }
         });
         renderCart();
       } catch (e) {
@@ -2021,10 +2427,17 @@
     document.getElementById("kasir-history-body").addEventListener("change", e => {
       const sel = e.target.closest(".status-select");
       if (!sel) return;
+      if (sel.value === "BATAL") {
+        if (!confirm(`Batalkan order #${sel.dataset.id}? Stok bahan akan dikembalikan.`)) {
+          loadKasirHistory();
+          return;
+        }
+      }
       sel.disabled = true;
       updateStatus(sel.dataset.id, sel.value).finally(() => {
         sel.disabled = false;
         loadKasirHistory();
+        loadMenu();   // refresh porsi stok di menu kasir
       });
     });
 

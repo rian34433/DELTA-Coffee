@@ -859,8 +859,9 @@
         <button class="modal-close" data-close="waste">✕</button>
       </div>
       <div class="prod-body" style="padding:0 18px 18px">
-        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Bahan</label>
-        <select id="waste-bahan" class="rec-input" style="width:100%"></select>
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Bahan (ketik untuk cari)</label>
+        <input class="rec-input" id="waste-bahan" type="text" list="waste-bahan-list" placeholder="Ketik nama bahan..." autocomplete="off" style="width:100%">
+        <datalist id="waste-bahan-list"></datalist>
         <div id="waste-stok-info" style="font-size:.78rem;color:#6b5b4e;margin-top:4px"></div>
         <label style="font-size:.82rem;color:#a0815f;display:block;margin:10px 0 3px">Tipe</label>
         <select id="waste-tipe" class="rec-input" style="width:100%">
@@ -3501,17 +3502,16 @@
       document.getElementById("waste-error").style.display = "none";
       document.getElementById("waste-loss-preview").style.display = "none";
       document.getElementById("waste-tipe").value = "WASTE";
-      // load bahan list for dropdown — fetch /api/menudata which returns {bahan:[{nama,harga,isi,stok}]}
-      const bahanData = await fetchJson(`${WORKER_URL}/api/menudata`).catch(() => ({}));
-      const bahanList = (bahanData && bahanData.bahan) || [];
-      // [CR#2] use fetched bahan list; fallback to recipeState if menudata empty
-      if (bahanList.length) {
+      // [STOK OPNAME] load bahan list for autocomplete — /api/bahan/list (STAFF auth)
+      const bahanList = await fetchJson(`${WORKER_URL}/api/bahan/list`).catch(() => []);
+      if (bahanList && bahanList.length) {
         wasteBahanList = bahanList;
       } else if (recipeState.bahan && recipeState.bahan.length) {
         wasteBahanList = recipeState.bahan.map(b => ({ nama: b.nama, stok: b.stok, harga: b.harga, isi: b.isi }));
       }
-      const sel = document.getElementById("waste-bahan");
-      sel.innerHTML = wasteBahanList.map(b => `<option value="${escapeAttr(b.nama)}">${escapeHtml(b.nama)}</option>`).join("");
+      const dl = document.getElementById("waste-bahan-list");
+      dl.innerHTML = wasteBahanList.map(b => `<option value="${escapeAttr(b.nama)}">`).join("");
+      document.getElementById("waste-bahan").value = "";
       updateWasteStokInfo();
       document.getElementById("waste-overlay").style.display = "flex";
       document.body.classList.add("modal-open");
@@ -3620,7 +3620,7 @@
       if (choice) openWasteModal();
       else openOpnameHistoryModal();
     });
-    document.getElementById("waste-bahan").addEventListener("change", updateWasteStokInfo);
+    document.getElementById("waste-bahan").addEventListener("input", updateWasteStokInfo);
     document.getElementById("waste-jumlah").addEventListener("input", updateWasteLossPreview);
     document.getElementById("waste-submit").addEventListener("click", submitWaste);
     document.querySelectorAll('[data-close="waste"]').forEach(el => el.addEventListener("click", () => {

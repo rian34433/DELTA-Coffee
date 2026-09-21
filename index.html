@@ -116,12 +116,14 @@
     .st-diproses { background: #dceafd; color: #1a64b3; }
     .st-selesai { background: #d9f2e2; color: #1a7a4b; }
     .st-batal { background: #fbe3e1; color: #b3261e; }
+    .st-belum-bayar { background: #fff8d6; color: #a07800; }
     .badge { display:inline-block; background:#fde8d7; color:#b3641a; border-radius:20px; padding:2px 10px; font-size:.75rem; font-weight:700; margin-left:6px; }
     .status-select { padding:4px 8px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid transparent; cursor:pointer; appearance:auto; }
     .status-select.st-baru { background:#fde8d7; color:#b3641a; }
     .status-select.st-diproses { background:#dceafd; color:#1a64b3; }
     .status-select.st-selesai { background:#d9f2e2; color:#1a7a4b; }
     .status-select.st-batal { background:#fbe3e1; color:#b3261e; }
+    .status-select.st-belum-bayar { background:#fff8d6; color:#a07800; }
     .status-select:hover { border-color: currentColor; }
     .status-select:disabled { opacity:.5; cursor:not-allowed; }
     .order-count { font-size:.9rem; color:#6b5b4e; }
@@ -364,6 +366,7 @@
               <option value="DIPROSES">Diproses</option>
               <option value="SELESAI">Selesai</option>
               <option value="BATAL">Batal</option>
+              <option value="BELUM_BAYAR">Belum Bayar</option>
             </select>
             <button id="kasir-history-refresh" class="mini-btn">⟳</button>
           </div>
@@ -459,6 +462,11 @@
             <div style="font-size:.72rem;color:#b3261e;text-transform:uppercase;font-weight:600">🔴 Loss Bahan (Waste)</div>
             <div id="rep-loss" style="font-size:1.25rem;font-weight:700;color:#b3261e;margin-top:3px">Rp 0</div>
             <div id="rep-loss-count" style="font-size:.72rem;color:#6b5b4e;margin-top:2px">0 catatan loss</div>
+          </div>
+          <div style="background:#fff8d6;border:1px solid #d8c7b2;padding:12px;border-radius:10px">
+            <div style="font-size:.72rem;color:#a07800;text-transform:uppercase;font-weight:600">🟡 Piutang (Belum Bayar)</div>
+            <div id="rep-piutang" style="font-size:1.25rem;font-weight:700;color:#a07800;margin-top:3px">Rp 0</div>
+            <div id="rep-piutang-count" style="font-size:.72rem;color:#6b5b4e;margin-top:2px">0 order belum lunas</div>
           </div>
           <div style="border:1.5px solid #2b7a4b;padding:12px;border-radius:10px;background:#f0faf4">
             <div style="font-size:.72rem;color:#137333;text-transform:uppercase;font-weight:700">Laba Bersih</div>
@@ -684,6 +692,24 @@
         <span>Total Bayar</span><span id="pay-total">Rp 0</span>
       </div>
       <button class="modal-buy" id="pay-confirm">Bayar Sekarang</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Cairkan (Settle BELUM_BAYAR) ===== -->
+  <div class="overlay" id="settle-overlay" style="display:none">
+    <div class="modal" style="max-width:360px">
+      <div class="prod-header">
+        <h3>💳 Cairkan Pembayaran</h3>
+        <button class="modal-close" data-close="settle">✕</button>
+      </div>
+      <div class="prod-body" style="padding:0 18px 18px">
+        <p style="font-size:.85rem;color:#6b5b4e;margin:12px 0 4px">Invoice: <strong id="settle-invoice"></strong></p>
+        <p style="font-size:.85rem;color:#6b5b4e;margin:4px 0 12px">Total: <strong id="settle-total"></strong></p>
+        <label style="font-size:.82rem;color:#a0815f;display:block;margin:0 0 6px">Metode Pembayaran</label>
+        <select id="settle-metode" class="rec-input" style="width:100%;box-sizing:border-box"></select>
+        <button class="modal-buy" id="settle-confirm" style="margin-top:16px">Konfirmasi Pembayaran</button>
+        <button type="button" id="settle-cancel-btn" style="width:100%;margin-top:8px;background:#fbe3e1;color:#b3261e;border:1px solid #f0a09a;padding:8px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">Batalkan Pesanan</button>
+      </div>
     </div>
   </div>
 
@@ -1215,7 +1241,8 @@
       { id: "Tunai", nama: "Tunai", aktif: true, teks: "Bayar langsung di kasir.", gambar: "" },
       { id: "QRIS", nama: "QRIS", aktif: true, teks: "Scan QRIS di bawah untuk bayar.", gambar: "" },
       { id: "Transfer", nama: "Transfer Bank", aktif: true, teks: "Transfer ke rekening di bawah, lalu konfirmasi ke kasir.", gambar: "" },
-      { id: "Saldo", nama: "Saldo", aktif: true, teks: "Potong dari saldo member.", gambar: "" }
+      { id: "Saldo", nama: "Saldo", aktif: true, teks: "Potong dari saldo member.", gambar: "" },
+      { id: "Belum Bayar", nama: "Belum Bayar", aktif: true, teks: "Pembayaran belum dilakukan — akan dikonfirmasi kemudian.", gambar: "" }
     ];
 
     async function loadPayConfig() {
@@ -1237,7 +1264,8 @@
     function renderPayConfig() {
       const box = document.getElementById("pay-cfg-list");
       box.innerHTML = "";
-      payCfg.forEach(m => {
+      // "Belum Bayar" adalah metode sistem — tidak perlu dikonfigurasi / diubah oleh admin
+      payCfg.filter(m => m.id !== "Belum Bayar").forEach(m => {
         const card = document.createElement("div");
         card.className = "paycfg-card" + (m.aktif ? "" : " off");
         card.innerHTML = `
@@ -1307,7 +1335,13 @@
         const res = await fetchJson(`${WORKER_URL}/api/payconfig`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ methods: payCfg })
+          body: JSON.stringify({ methods: payCfg.map(m => ({
+            id: m.id,
+            nama: m.nama,
+            aktif: m.id === "Belum Bayar" ? true : !!m.aktif,
+            teks: m.teks || "",
+            gambar: m.gambar || ""
+          })) })
         });
         toast(`Pengaturan pembayaran tersimpan (${res.methods || payCfg.length}) ✓`);
         renderPayMethods();
@@ -2093,17 +2127,20 @@
     let coRecipeData = null;  // cache recipedata { bahan, resep }
     let coCalcTimer = null;
 
-    function openCustomOrder() {
+    async function openCustomOrder() {
+      // pastikan payCfg sudah load
+      if (!payCfg.length) await loadPayConfig();
       document.getElementById("co-nama").value = "";
       document.getElementById("co-harga-jual").value = "";
       document.getElementById("co-catatan").value = "";
       document.getElementById("co-modal-preview").textContent = "—";
       document.getElementById("co-error").style.display = "none";
       document.getElementById("co-bahan-list").innerHTML = "";
-      // Isi select metode dari payConfig
+      // Isi select metode dari payConfig (hanya yang aktif, kecuali Belum Bayar)
       const sel = document.getElementById("co-metode");
       sel.innerHTML = "";
-      (payCfg || []).filter(m => m.aktif !== false && m.aktif !== "false")
+      payCfg
+        .filter(m => m.aktif === true && m.id !== "Belum Bayar")
         .forEach(m => { const o = document.createElement("option"); o.value = m.id || m.nama; o.textContent = m.nama; sel.appendChild(o); });
       if (!sel.options.length) { const o = document.createElement("option"); o.value = "Tunai"; o.textContent = "Tunai"; sel.appendChild(o); }
       addCoBahanRow();
@@ -2454,8 +2491,13 @@
       const validExpenses = reportExpenses.filter(p => isDateInPeriod(p.waktu, period, startDate, endDate));
 
       // 1. KPI Calculations
-      const totalOmset = validOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
-      const totalTx = validOrders.length;
+      // Piutang = BELUM_BAYAR orders (belum lunas, tidak masuk omset)
+      const piutangOrders = validOrders.filter(o => o.status === "BELUM_BAYAR");
+      const totalPiutang = piutangOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      // Omset hanya dari yang sudah LUNAS (exclude BELUM_BAYAR)
+      const paidOrders = validOrders.filter(o => o.status !== "BELUM_BAYAR");
+      const totalOmset = paidOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const totalTx = paidOrders.length;
       const avgTx = totalTx ? Math.round(totalOmset / totalTx) : 0;
 
       // Map modal menu
@@ -2473,7 +2515,7 @@
       });
 
       let totalHPP = 0;
-      validOrders.forEach(o => {
+      paidOrders.forEach(o => {
         (o.items || []).forEach(it => {
           const baseNama = String(it.nama || "").split("|")[0].trim();
           const m = modalMap[it.nama] || modalMap[baseNama] || it.hargaModal || 0;
@@ -2499,6 +2541,8 @@
       document.getElementById("rep-exp-count").textContent = `${validExpenses.length} pengeluaran`;
       document.getElementById("rep-loss").textContent = rupiah(totalLoss);
       document.getElementById("rep-loss-count").textContent = `${validOpname.length} catatan loss`;
+      document.getElementById("rep-piutang").textContent = rupiah(totalPiutang);
+      document.getElementById("rep-piutang-count").textContent = `${piutangOrders.length} order belum lunas`;
       document.getElementById("rep-net-profit").textContent = rupiah(netProfit);
       document.getElementById("rep-margin-pct").textContent = `Margin bersih ${marginPct}%`;
 
@@ -2506,7 +2550,7 @@
       const chartBox = document.getElementById("rep-chart-container");
       chartBox.innerHTML = "";
       const dailyMap = {};
-      validOrders.forEach(o => {
+      paidOrders.forEach(o => {
         const d = (o.waktu || "").slice(0, 10);
         if (d) dailyMap[d] = (dailyMap[d] || 0) + (Number(o.total) || 0);
       });
@@ -2532,7 +2576,7 @@
 
       // 3. Top Selling Menu
       const topItems = {};
-      validOrders.forEach(o => {
+      paidOrders.forEach(o => {
         (o.items || []).forEach(it => {
           if (!it.nama) return;
           if (!topItems[it.nama]) topItems[it.nama] = { qty: 0, omset: 0 };
@@ -2564,7 +2608,7 @@
 
       // 4. Metode Pembayaran Breakdown
       const payMap = {};
-      validOrders.forEach(o => {
+      paidOrders.forEach(o => {
         const m = o.metode || "Tunai";
         if (!payMap[m]) payMap[m] = { count: 0, total: 0 };
         payMap[m].count++;
@@ -2599,7 +2643,10 @@
       const validOrders = reportOrders.filter(o => isDateInPeriod(o.waktu, period, startDate, endDate) && o.status !== "BATAL");
       const validExpenses = reportExpenses.filter(p => isDateInPeriod(p.waktu, period, startDate, endDate));
 
-      const totalOmset = validOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const paidOrdersCsv = validOrders.filter(o => o.status !== "BELUM_BAYAR");
+      const piutangOrdersCsv = validOrders.filter(o => o.status === "BELUM_BAYAR");
+      const totalOmset = paidOrdersCsv.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const totalPiutangCsv = piutangOrdersCsv.reduce((s, o) => s + (Number(o.total) || 0), 0);
       const totalExpense = validExpenses.reduce((s, p) => s + (Number(p.nominal) || 0), 0);
 
       let csv = `Laporan Penjualan DELTA Coffee\n`;
@@ -2607,8 +2654,10 @@
       csv += `Tanggal Cetak;${new Date().toLocaleString("id-ID")}\n\n`;
 
       csv += `=== RINGKASAN ===\n`;
-      csv += `Total Omset;${totalOmset}\n`;
-      csv += `Total Transaksi;${validOrders.length}\n`;
+      csv += `Total Omset (Lunas);${totalOmset}\n`;
+      csv += `Total Transaksi Lunas;${paidOrdersCsv.length}\n`;
+      csv += `Piutang (Belum Bayar);${totalPiutangCsv}\n`;
+      csv += `Jumlah Order Belum Lunas;${piutangOrdersCsv.length}\n`;
       csv += `Total Kas Keluar;${totalExpense}\n\n`;
 
       csv += `=== RINCIAN TRANSAKSI ===\n`;
@@ -3109,9 +3158,10 @@
       document.getElementById("pay-summary").innerHTML = sumHtml;
       document.getElementById("pay-total").textContent = rupiah(total);
       const pmBox = document.getElementById("pay-methods");
-      // hanya metode yang aktif di pengaturan
+      const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
+      // hanya metode aktif; "Belum Bayar" hanya untuk staf kasir/admin
       const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
-        .filter(m => m.aktif)
+        .filter(m => m.aktif && (m.nama !== "Belum Bayar" || isStaff))
         .map(m => m.nama);
       if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
       pmBox.innerHTML = list.map(m =>
@@ -3131,8 +3181,9 @@
     function renderPayMethods() {
       const pmBox = document.getElementById("pay-methods");
       if (!pmBox || !pmBox.closest(".overlay") || pmBox.closest(".overlay").style.display === "none") return;
+      const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
       const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
-        .filter(m => m.aktif)
+        .filter(m => m.aktif && (m.nama !== "Belum Bayar" || isStaff))
         .map(m => m.nama);
       if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
       pmBox.innerHTML = list.map(m =>
@@ -3167,7 +3218,7 @@
         // guest: catat juga di localStorage — riwayat sesi sampai logout
         if (session && session.role === "GUEST") {
           const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: "BARU" });
+          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || (payMetode === "Belum Bayar" ? "BELUM_BAYAR" : "BARU") });
           localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
         }
         toast(`Invoice ${data.invoice || data.id} — ${payMetode} ✓`);
@@ -3289,28 +3340,48 @@
       });
     }
 
-    const STATUS_LIST = ["BARU", "DIPROSES", "SELESAI", "BATAL"];
-    const STATUS_LABEL = { "BARU": "Baru", "DIPROSES": "Diproses", "SELESAI": "Selesai", "BATAL": "Batal" };
-    function statusPill(st, id) {
-      const map = { "BARU": "st-baru", "DIPROSES": "st-diproses", "SELESAI": "st-selesai", "BATAL": "st-batal" };
+    const STATUS_LIST = ["BARU", "BELUM_BAYAR", "DIPROSES", "SELESAI", "BATAL"];
+    const STATUS_LABEL = { "BARU": "Baru", "BELUM_BAYAR": "Belum Bayar", "DIPROSES": "Diproses", "SELESAI": "Selesai", "BATAL": "Batal" };
+    const STATUS_RANK = { "BARU": 0, "BELUM_BAYAR": 1, "DIPROSES": 2, "SELESAI": 3 };
+    function statusPill(st, id, metode) {
+      const map = { "BARU": "st-baru", "BELUM_BAYAR": "st-belum-bayar", "DIPROSES": "st-diproses", "SELESAI": "st-selesai", "BATAL": "st-batal" };
       const cls = map[st] || "st-baru";
       const canEdit = session && (session.role === "ADMIN" || session.role === "KASIR");
-      // ADMIN: semua opsi bebas (bypass). KASIR: hanya maju + BATAL.
-      const isAdmin = session && session.role === "ADMIN";
-      // urutan maju: BARU→DIPROSES→SELESAI. BATAL = terminal (tak bisa lanjut).
-      const order = { "BARU": 0, "DIPROSES": 1, "SELESAI": 2 };
-      const curIdx = order[st] ?? 99;
+
+      // BELUM_BAYAR: hanya tombol cairkan
+      if (st === "BELUM_BAYAR") {
+        if (!canEdit) {
+          return `<span class="status-select ${cls}" style="cursor:default;">Belum Bayar</span>`;
+        }
+        return `<button class="status-select ${cls} settle-btn" data-id="${escapeHtml(String(id))}" style="cursor:pointer;border:1px solid #d4a017;" title="Klik untuk cairkan pembayaran">Belum Bayar</button>`;
+      }
+
+      // Unknown status: default to highest rank to prevent changes
+      const curIdx = STATUS_RANK[st] !== undefined ? STATUS_RANK[st] : 99;
+      const isTerminal = st === "SELESAI" || st === "BATAL";
+      // Jika sedari awal sudah pilih salah satu pembayaran (bukan "Belum Bayar"), status belum bayar di-offkan
+      const isPaidMethod = Boolean(metode && metode !== "Belum Bayar");
+
       const opts = STATUS_LIST.map(s => {
         let disOpt = "";
-        if (!isAdmin) {
-          if (st === "BATAL") disOpt = s !== "BATAL" ? " disabled" : "";   // BATAL terminal
-          else if (s === "BATAL") disOpt = "";                              // BATAL selalu boleh dipilih
-          else if (curIdx >= (order[s] ?? 99)) disOpt = " disabled";       // mundur/sama → disable
+        if (st === s) {
+          disOpt = ""; // status saat ini selalu aktif
+        } else if (isTerminal) {
+          disOpt = " disabled"; // status selesai & batal tidak bisa diubah ke mana pun
+        } else if (s === "BATAL") {
+          disOpt = ""; // boleh batal dari BARU, DIPROSES
+        } else if (s === "BELUM_BAYAR" && isPaidMethod) {
+          disOpt = " disabled"; // sedari awal sudah pilih pembayaran lain → offkan
+        } else if ((STATUS_RANK[s] ?? 99) <= curIdx) {
+          disOpt = " disabled"; // status mundur atau sama dinonaktifkan
         }
         return `<option value="${s}" ${s === st ? "selected" : ""}${disOpt}>${STATUS_LABEL[s]}</option>`;
       }).join("");
-      const dis = canEdit ? "" : " disabled";
-      return `<select class="status-select ${cls}" data-id="${escapeHtml(String(id))}" title="Ubah status"${dis}>${opts}</select>`;
+
+      // Jika status final (SELESAI atau BATAL) atau tidak punya akses edit, select disabled
+      const dis = (!canEdit || isTerminal) ? " disabled" : "";
+      const tooltip = isTerminal ? (st === "SELESAI" ? "Pesanan selesai (status final)" : "Pesanan dibatalkan (status final)") : "Ubah status";
+      return `<select class="status-select ${cls}" data-id="${escapeHtml(String(id))}" title="${tooltip}"${dis}>${opts}</select>`;
     }
 
     async function updateStatus(id, status) {
@@ -3380,17 +3451,9 @@
     async function loadKasirHistory() {
       try {
         if (session && session.role === "GUEST") {
-          // guest: riwayat = order sesi ini (localStorage), TAPI status diambil live dari sheet
-          // biar perubahan status oleh kasir langsung terlihat.
+          // guest: riwayat sesi dari localStorage (GET /api/orders butuh auth)
           const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-          const invoices = local.map(o => o.invoice);
-          const rows = await fetchJson(`${WORKER_URL}/api/orders`);
-          const sheet = parseOrders(rows).filter(o => invoices.includes(o.invoice));
-          // gabung: data lokal + status live dari sheet
-          kasirHistory = local.map(l => {
-            const s = sheet.find(x => x.invoice === l.invoice);
-            return { ...l, id: l.invoice, status: s ? s.status : l.status };
-          });
+          kasirHistory = local.map(l => ({ ...l, id: l.invoice || l.id }));
           renderKasirHistory();
           return;
         }
@@ -3432,7 +3495,7 @@
           <td>${escapeHtml(o.username || "guest")}</td>
           <td class="items-detail">${detail || "-"}</td>
           <td><strong>${rupiah(o.total)}</strong></td>
-          <td>${statusPill(o.status, o.id)}</td>
+          <td>${statusPill(o.status, o.id, o.metode)}</td>
           <td style="display:${isAdmin ? "" : "none"}">
             ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${o.id}">Hapus</button>` : ""}
           </td>
@@ -3466,6 +3529,26 @@
     document.getElementById("kasir-history-body").addEventListener("change", e => {
       const sel = e.target.closest(".status-select");
       if (!sel) return;
+      const o = kasirHistory.find(x => String(x.id) === String(sel.dataset.id));
+      const curSt = o ? o.status : "";
+      const newSt = sel.value;
+
+      if (curSt === "SELESAI" || curSt === "BATAL") {
+        toast(`Status ${curSt} sudah final — tidak bisa diubah`, true);
+        loadKasirHistory();
+        return;
+      }
+      if (newSt === "BELUM_BAYAR" && o && o.metode && o.metode !== "Belum Bayar") {
+        toast("Pesanan sudah memilih pembayaran — status Belum Bayar tidak aktif", true);
+        loadKasirHistory();
+        return;
+      }
+      if (newSt !== "BATAL" && (STATUS_RANK[curSt] ?? 0) >= (STATUS_RANK[newSt] ?? 99)) {
+        toast(`Status tidak bisa mundur: ${STATUS_LABEL[curSt] || curSt} → ${STATUS_LABEL[newSt] || newSt}`, true);
+        loadKasirHistory();
+        return;
+      }
+
       if (sel.value === "BATAL") {
         if (!confirm(`Batalkan order #${sel.dataset.id}? Stok bahan akan dikembalikan.`)) {
           loadKasirHistory();
@@ -3487,6 +3570,71 @@
       if (act === "cancel" && !confirm(`Batalkan order #${id}? Stok bahan akan dikembalikan.`)) return;
       if (act === "delete" && !confirm(`Hapus order #${id} permanen?`)) return;
       kasirAction(act, id);
+    });
+
+    // ===== Cairkan (settle BELUM_BAYAR) =====
+    let _settleId = null;
+    function openSettleModal(id, invoice, total) {
+      _settleId = id;
+      document.getElementById("settle-invoice").textContent = invoice || id;
+      document.getElementById("settle-total").textContent = rupiah(total || 0);
+      // populate metode (exclude Belum Bayar itself)
+      const sel = document.getElementById("settle-metode");
+      const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
+        .filter(m => m.aktif && m.nama !== "Belum Bayar")
+        .map(m => m.nama);
+      sel.innerHTML = list.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+      if (!sel.options.length) sel.innerHTML = `<option value="Tunai">Tunai</option>`;
+      document.getElementById("settle-overlay").style.display = "flex";
+      overlayCount++;
+    }
+    document.getElementById("settle-confirm").addEventListener("click", async () => {
+      if (!_settleId) return;
+      const metode = document.getElementById("settle-metode").value;
+      const btn = document.getElementById("settle-confirm");
+      btn.disabled = true;
+      try {
+        const res = await fetchJson(`${WORKER_URL}/api/order/${_settleId}/settle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ metode })
+        });
+        toast(`Invoice ${res.invoice || _settleId} dicairkan via ${metode} ✓`);
+        closeOverlay("settle");
+        // sync guest history if needed
+        if (session && session.role === "GUEST") {
+          const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+          const idx = local.findIndex(o => String(o.invoice || o.id) === String(_settleId));
+          if (idx >= 0) {
+            local[idx].status = "SELESAI";
+            local[idx].metode = metode;
+            localStorage.setItem("cs_guest_orders", JSON.stringify(local));
+          }
+        }
+        loadKasirHistory();
+      } catch (e) {
+        console.error(e);
+        toast("Gagal cairkan: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("settle-cancel-btn").addEventListener("click", () => {
+      if (!_settleId) return;
+      const id = _settleId;
+      if (!confirm(`Batalkan order #${id}? Stok bahan akan dikembalikan.`)) return;
+      closeOverlay("settle");
+      kasirAction("cancel", id);
+    });
+
+    // Cairkan button click dari riwayat
+    document.getElementById("kasir-history-body").addEventListener("click", e => {
+      const btn = e.target.closest(".settle-btn");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const o = kasirHistory.find(x => String(x.id) === String(id));
+      openSettleModal(id, o?.invoice || id, o?.total || 0);
     });
     document.getElementById("kasir-history-filter").addEventListener("change", renderKasirHistory);
     document.getElementById("kasir-history-refresh").addEventListener("click", loadKasirHistory);

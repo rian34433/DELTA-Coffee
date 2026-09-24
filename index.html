@@ -373,7 +373,7 @@
         </div>
         <div class="table-scroll">
           <table class="orders" id="kasir-history-table">
-            <thead><tr><th>Waktu</th><th>Invoice</th><th>Nama</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Waktu</th><th>Invoice</th><th>Nama</th><th>Item</th><th>Total</th><th>Status</th><th>Metode</th><th>Aksi</th></tr></thead>
             <tbody id="kasir-history-body"></tbody>
           </table>
         </div>
@@ -1401,7 +1401,7 @@
         const perUnit = toPerUnit(b.harga, b.isi);
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><input class="rec-input" data-field="nama" data-id="${b.id}" value="${escapeAttr(b.nama || "")}"></td>
+          <td><input class="rec-input" data-field="nama" data-id="${b.id}" value="${escapeAttr(b.nama || "")}" list="bahan-list" autocomplete="off"></td>
           <td><input class="rec-input" data-field="harga" data-id="${b.id}" type="number" value="${escapeAttr(b.harga ?? "")}"></td>
           <td><input class="rec-input" data-field="isi" data-id="${b.id}" value="${escapeAttr(b.isi || "")}" placeholder="gr/ml"></td>
           <td><input class="rec-input" data-field="stok" data-id="${b.id}" type="number" value="${escapeAttr(b.stok ?? "")}"></td>
@@ -3488,6 +3488,10 @@
           const note = i.catatan ? `<br><span class="item-catatan-tag">${escapeHtml(i.catatan)}</span>` : "";
           return `<span>${main}${note}</span>`;
         }).join("<span style=\"color:#c2b19e\">, </span>");
+        // hanya tampilkan metode yang aktif (toggle switch on)
+        const metodeAktif = (payCfg.length ? payCfg : PAY_DEFAULTS)
+          .find(m => m.id === o.metode || m.nama === o.metode);
+        const metodeDisplay = metodeAktif && metodeAktif.aktif ? escapeHtml(o.metode || "-") : "-";
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${formatWaktu(o.waktu)}</td>
@@ -3496,6 +3500,7 @@
           <td class="items-detail">${detail || "-"}</td>
           <td><strong>${rupiah(o.total)}</strong></td>
           <td>${statusPill(o.status, o.id, o.metode)}</td>
+          <td>${metodeDisplay}</td>
           <td style="display:${isAdmin ? "" : "none"}">
             ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${o.id}">Hapus</button>` : ""}
           </td>

@@ -1059,9 +1059,22 @@
         if (sess && sess.token) headers.Authorization = "Bearer " + sess.token;
         const res = await fetch(url, { ...opts, headers, signal: ctrl.signal });
         if (res.status === 401) {
-          localStorage.removeItem("cs_session");
-          try { session = null; showLogin(); } catch (e) {}
-          throw new Error("Sesi habis — login ulang");
+          // Only logout on actual auth failure, not rate limit / server errors
+          try {
+            const j = await res.json();
+            if (j && j.error && j.error.includes("token")) {
+              localStorage.removeItem("cs_session");
+              try { session = null; showLogin(); } catch (e) {}
+              throw new Error("Sesi habis — login ulang");
+            }
+          } catch (_) {
+            // If response is not JSON, treat as auth failure
+            localStorage.removeItem("cs_session");
+            try { session = null; showLogin(); } catch (e) {}
+            throw new Error("Sesi habis — login ulang");
+          }
+          // For other 401 (rate limit, etc), don't logout, just throw
+          throw new Error("Akses ditolak");
         }
         if (!res.ok) {
           let msg = "HTTP " + res.status;
@@ -1241,25 +1254,37 @@
       { id: "Tunai", nama: "Tunai", aktif: true, teks: "Bayar langsung di kasir.", gambar: "" },
       { id: "QRIS", nama: "QRIS", aktif: true, teks: "Scan QRIS di bawah untuk bayar.", gambar: "" },
       { id: "Transfer", nama: "Transfer Bank", aktif: true, teks: "Transfer ke rekening di bawah, lalu konfirmasi ke kasir.", gambar: "" },
-      { id: "Saldo", nama: "Saldo", aktif: true, teks: "Potong dari saldo member.", gambar: "" },
-      { id: "Belum Bayar", nama: "Belum Bayar", aktif: true, teks: "Pembayaran belum dilakukan — akan dikonfirmasi kemudian.", gambar: "" }
+      { id: "Saldo", nama: "Saldo", aktif: true, teks: "Potong dari saldo member.", gambar: "" }
     ];
 
-    async function loadPayConfig() {
-      try {
-        const data = await fetchJson(`${WORKER_URL}/api/payconfig`);
-        payCfg = (Array.isArray(data) ? data : data.methods || []);
-        // pastikan semua default ada; tambah yg hilang
-        PAY_DEFAULTS.forEach(d => {
-          if (!payCfg.some(p => p.id === d.id)) payCfg.push({ ...d });
-        });
-        renderPayConfig();
-        renderPayMethods();   // refresh checkout
-      } catch (e) {
-        console.error(e);
-        toast("Gagal muat pengaturan pembayaran: " + e.message, true);
-      }
+    // Prevent race conditions: only one loadPayConfig at a time
+let _loadPayConfigPromise = null;
+
+async function loadPayConfig() {
+  if (_loadPayConfigPromise) {
+    // Already loading, wait for existing promise
+    return _loadPayConfigPromise;
+  }
+
+  _loadPayConfigPromise = (async () => {
+    try {
+      const data = await fetchJson(`${WORKER_URL}/api/payconfig`);
+      payCfg = (Array.isArray(data) ? data : data.methods || []);
+      // pastikan semua default ada; tambah yg hilang
+      PAY_DEFAULTS.forEach(d => {
+        if (!payCfg.some(p => p.id === d.id)) payCfg.push({ ...d });
+      });
+      renderPayConfig();
+      renderPayMethods();   // refresh checkout
+    } catch (e) {
+      console.error(e);
+      toast("Gagal muat pengaturan pembayaran: " + e.message, true);
+    } finally {
+      _loadPayConfigPromise = null;
     }
+  })();
+  return _loadPayConfigPromise;
+}
 
     function renderPayConfig() {
       const box = document.getElementById("pay-cfg-list");
@@ -1458,6 +1483,15 @@
       dl.innerHTML = bahanNames.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
     }
 
+    // Debounce helper
+    function debounce(fn, delay) {
+      let timeoutId;
+      return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+      };
+    }
+
     // edit inline — simpan ke state
     function syncRecInput(inp) {
       const { field, id } = inp.dataset;
@@ -1481,6 +1515,9 @@
       }
     }
 
+    // Debounced version for input events
+    const debouncedSyncRecInput = debounce(syncRecInput, 150);
+
     // buka popup autocomplete saat fokus/klik pada input yang punya datalist di tabel resep
     document.addEventListener("focusin", e => {
       const inp = e.target.closest("#resep-table input[list]");
@@ -1497,7 +1534,7 @@
     document.addEventListener("input", e => {
       const inp = e.target.closest(".rec-input");
       if (!inp) return;
-      syncRecInput(inp);
+      debouncedSyncRecInput(inp);
     });
     document.addEventListener("change", e => {
       const inp = e.target.closest(".rec-input");
@@ -1838,7 +1875,11 @@
     function applyPrivilege() {
       const role = session ? session.role : null;
       // KASIR & USER & GUEST: tak boleh akses admin view.
-      if (role !== "ADMIN" && currentTab === "admin") switchTab(role === "KASIR" ? "history" : "kasir");
+      if (role !== "ADMIN" && currentTab === "admin") {
+        switchTab(role === "KASIR" ? "history" : "kasir");
+        // Reset sub-tab to default when non-admin is forced out of admin
+        switchSub("menu");
+      }
 
       // Pengeluaran & Laporan: hanya KASIR & ADMIN
       const isStaff = role === "ADMIN" || role === "KASIR";

@@ -118,12 +118,37 @@
     .st-batal { background: #fbe3e1; color: #b3261e; }
     .st-belum-bayar { background: #fff8d6; color: #a07800; }
     .badge { display:inline-block; background:#fde8d7; color:#b3641a; border-radius:20px; padding:2px 10px; font-size:.75rem; font-weight:700; margin-left:6px; }
-    .status-select { padding:4px 8px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid transparent; cursor:pointer; appearance:auto; }
+    .status-select {
+      display: inline-block;
+      width: 108px;
+      height: 28px;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      box-sizing: border-box;
+      text-align: center;
+      text-align-last: center;
+      -webkit-text-align-last: center;
+      vertical-align: middle;
+      line-height: normal;
+    }
+    select.status-select {
+      appearance: auto;
+    }
+    button.status-select, span.status-select {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
     .status-select.st-baru { background:#fde8d7; color:#b3641a; }
     .status-select.st-diproses { background:#dceafd; color:#1a64b3; }
     .status-select.st-selesai { background:#d9f2e2; color:#1a7a4b; }
     .status-select.st-batal { background:#fbe3e1; color:#b3261e; }
-    .status-select.st-belum-bayar { background:#fff8d6; color:#a07800; }
+    .status-select.st-belum-bayar { background:#fff8d6; color:#a07800; border:1px solid #d4a017; }
     .status-select:hover { border-color: currentColor; }
     .status-select:disabled { opacity:.5; cursor:not-allowed; }
     .order-count { font-size:.9rem; color:#6b5b4e; }
@@ -364,9 +389,9 @@
               <option value="">Semua</option>
               <option value="BARU">Baru</option>
               <option value="DIPROSES">Diproses</option>
+              <option value="BELUM_BAYAR">Belum Bayar</option>
               <option value="SELESAI">Selesai</option>
               <option value="BATAL">Batal</option>
-              <option value="BELUM_BAYAR">Belum Bayar</option>
             </select>
             <button id="kasir-history-refresh" class="mini-btn">⟳</button>
           </div>
@@ -468,6 +493,11 @@
             <div id="rep-piutang" style="font-size:1.25rem;font-weight:700;color:#a07800;margin-top:3px">Rp 0</div>
             <div id="rep-piutang-count" style="font-size:.72rem;color:#6b5b4e;margin-top:2px">0 order belum lunas</div>
           </div>
+          <div style="background:#eef4fb;border:1px solid #b8cfe6;padding:12px;border-radius:10px">
+            <div style="font-size:.72rem;color:#1a4f8a;text-transform:uppercase;font-weight:600">📦 Nilai Stok Bahan</div>
+            <div id="rep-stok-value" style="font-size:1.25rem;font-weight:700;color:#1a4f8a;margin-top:3px">Rp 0</div>
+            <div id="rep-stok-count" style="font-size:.72rem;color:#6b5b4e;margin-top:2px">0 bahan · stok saat ini</div>
+          </div>
           <div style="border:1.5px solid #2b7a4b;padding:12px;border-radius:10px;background:#f0faf4">
             <div style="font-size:.72rem;color:#137333;text-transform:uppercase;font-weight:700">Laba Bersih</div>
             <div id="rep-net-profit" style="font-size:1.25rem;font-weight:800;color:#137333;margin-top:3px">Rp 0</div>
@@ -488,7 +518,7 @@
             <div style="font-size:.9rem;font-weight:700;color:#6b3f24;margin-bottom:8px">🏆 Menu Terlaris</div>
             <div class="table-scroll">
               <table class="orders" style="background:transparent" id="rep-top-table">
-                <thead><tr><th>No</th><th>Menu</th><th>Terjual</th><th>Omset</th></tr></thead>
+                <thead><tr><th>No</th><th>Menu</th><th>Terjual</th><th>Omset</th><th>Laba Kotor</th><th>Margin</th></tr></thead>
                 <tbody id="rep-top-body"></tbody>
               </table>
             </div>
@@ -504,6 +534,84 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <!-- Nilai Stok Bahan (Rupiah) -->
+        <div style="background:#faf6ef;border:1px solid #d8c7b2;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div style="font-size:.9rem;font-weight:700;color:#6b3f24">📦 Rincian Nilai Stok Bahan</div>
+            <div id="rep-stok-total-inline" style="font-size:.82rem;color:#1a4f8a;font-weight:700">Total Rp 0</div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-stok-table">
+              <thead><tr><th>Bahan</th><th>Stok</th><th>Harga Beli</th><th>Isi</th><th>Nilai Stok</th></tr></thead>
+              <tbody id="rep-stok-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Aging Piutang -->
+        <div style="background:#fff8d6;border:1px solid #e8c84a;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="font-size:.9rem;font-weight:700;color:#7a5c00;margin-bottom:8px">🕐 Aging Piutang (Belum Lunas)</div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-aging-table">
+              <thead><tr><th>Bucket</th><th>Jumlah Order</th><th>Total Piutang</th></tr></thead>
+              <tbody id="rep-aging-body"></tbody>
+            </table>
+          </div>
+          <div id="rep-aging-detail-wrap" style="margin-top:10px;display:none">
+            <div style="font-size:.82rem;font-weight:700;color:#7a5c00;margin-bottom:4px">Detail Order Piutang</div>
+            <div class="table-scroll">
+              <table class="orders" style="background:transparent">
+                <thead><tr><th>Invoice</th><th>Tgl Order</th><th>Kasir</th><th>Total</th><th>Umur (hari)</th></tr></thead>
+                <tbody id="rep-aging-detail"></tbody>
+              </table>
+            </div>
+          </div>
+          <button id="rep-aging-toggle" style="margin-top:8px;background:none;border:1px solid #e8c84a;border-radius:6px;padding:3px 10px;font-size:.78rem;color:#7a5c00;cursor:pointer">▼ Lihat Detail</button>
+        </div>
+
+        <!-- Bahan Kritis -->
+        <div style="background:#fbe3e1;border:1px solid #e57373;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="font-size:.9rem;font-weight:700;color:#b71c1c;margin-bottom:8px">⚠️ Bahan Kritis (Stok Rendah)</div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-kritis-table">
+              <thead><tr><th>Bahan</th><th>Stok Saat Ini</th><th>Est. Porsi Tersisa</th><th>Status</th></tr></thead>
+              <tbody id="rep-kritis-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Laporan per Kasir -->
+        <div style="background:#faf6ef;border:1px solid #d8c7b2;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="font-size:.9rem;font-weight:700;color:#6b3f24;margin-bottom:8px">👤 Laporan per Kasir</div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-kasir-table">
+              <thead><tr><th>Kasir</th><th>Transaksi</th><th>Omset</th><th>Avg/Transaksi</th></tr></thead>
+              <tbody id="rep-kasir-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rekap Order BATAL -->
+        <div style="background:#f9f9f9;border:1px solid #cfcfcf;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div style="font-size:.9rem;font-weight:700;color:#555">🚫 Rekap Order BATAL</div>
+            <div id="rep-batal-inline" style="font-size:.82rem;color:#b3261e;font-weight:700">0 order · Rp 0 potensi hilang</div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-batal-table">
+              <thead><tr><th>Invoice</th><th>Waktu</th><th>Kasir</th><th>Total</th><th>Items</th></tr></thead>
+              <tbody id="rep-batal-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Heatmap Jam Sibuk -->
+        <div style="background:#faf6ef;border:1px solid #d8c7b2;border-radius:10px;padding:14px;margin-top:16px;margin-bottom:4px">
+          <div style="font-size:.9rem;font-weight:700;color:#6b3f24;margin-bottom:10px">🔥 Heatmap Jam Sibuk (WIB)</div>
+          <div id="rep-heatmap" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          <div style="font-size:.72rem;color:#a0815f;margin-top:6px">Warna lebih gelap = lebih ramai · Klik jam untuk detail</div>
         </div>
 
       </div>
@@ -695,20 +803,41 @@
     </div>
   </div>
 
-  <!-- ===== Modal Cairkan (Settle BELUM_BAYAR) ===== -->
+  <!-- ===== Modal Cairkan (Settle BELUM_BAYAR & Split Bayar) ===== -->
   <div class="overlay" id="settle-overlay" style="display:none">
-    <div class="modal" style="max-width:360px">
+    <div class="modal" style="max-width:440px">
       <div class="prod-header">
         <h3>💳 Cairkan Pembayaran</h3>
         <button class="modal-close" data-close="settle">✕</button>
       </div>
       <div class="prod-body" style="padding:0 18px 18px">
-        <p style="font-size:.85rem;color:#6b5b4e;margin:12px 0 4px">Invoice: <strong id="settle-invoice"></strong></p>
-        <p style="font-size:.85rem;color:#6b5b4e;margin:4px 0 12px">Total: <strong id="settle-total"></strong></p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px">
+          <p style="font-size:.85rem;color:#6b5b4e;margin:0">Invoice: <strong id="settle-invoice"></strong></p>
+          <span id="settle-badge-split" style="font-size:.72rem;background:#fff8d6;color:#a07800;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid #e8c84a">Bisa Split Item</span>
+        </div>
+
+        <div style="background:#faf6ef;border:1px solid #d8c7b2;border-radius:8px;padding:10px;margin-bottom:12px">
+          <div style="font-size:.78rem;font-weight:700;color:#6b3f24;margin-bottom:6px;display:flex;justify-content:space-between">
+            <span>Pilih Item yang Ingin Dibayar:</span>
+            <label style="font-weight:normal;cursor:pointer;font-size:.75rem"><input type="checkbox" id="settle-select-all" checked> Pilih Semua</label>
+          </div>
+          <div id="settle-items-list" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:#6b5b4e;margin-bottom:4px">
+          <span>Total Tagihan Awal:</span><span id="settle-total-orig" style="font-weight:600">Rp 0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.88rem;color:#2b7a4b;font-weight:700;margin-bottom:4px">
+          <span>Akan Dibayar Sekarang:</span><span id="settle-total-pay">Rp 0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:#b3641a;font-weight:600;margin-bottom:12px">
+          <span>Sisa Tagihan Belum Lunas:</span><span id="settle-total-remain">Rp 0</span>
+        </div>
+
         <label style="font-size:.82rem;color:#a0815f;display:block;margin:0 0 6px">Metode Pembayaran</label>
         <select id="settle-metode" class="rec-input" style="width:100%;box-sizing:border-box"></select>
         <button class="modal-buy" id="settle-confirm" style="margin-top:16px">Konfirmasi Pembayaran</button>
-        <button type="button" id="settle-cancel-btn" style="width:100%;margin-top:8px;background:#fbe3e1;color:#b3261e;border:1px solid #f0a09a;padding:8px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">Batalkan Pesanan</button>
+        <button type="button" id="settle-cancel-btn" style="width:100%;margin-top:8px;background:#fbe3e1;color:#b3261e;border:1px solid #f0a09a;padding:8px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">Batalkan Seluruh Pesanan</button>
       </div>
     </div>
   </div>
@@ -1002,6 +1131,23 @@
 
     const cart = {};  // { [nama]: { item, qty } }
     let menu = [];
+    let modalMap = {};   // rebuilt by buildModalMap() whenever menu changes
+
+    function buildModalMap() {
+      const m = {};
+      (menu || []).forEach(item => {
+        const mCost = Number(item.modal) || 0;
+        if (item.nama) m[item.nama] = mCost;
+        if (item.variants) {
+          item.variants.forEach(v => {
+            const vCost = Number(v.modal) || mCost;
+            if (v.nama) m[v.nama] = vCost;
+            if (v.size && item.nama) m[`${item.nama}|${v.size}`] = vCost;
+          });
+        }
+      });
+      modalMap = m;
+    }
 
     const rupiah = n => "Rp " + n.toLocaleString("id-ID");
 
@@ -1197,19 +1343,65 @@
     document.getElementById("menu-load").addEventListener("click", loadMenuData);
 
     // ===== Upload gambar menu (resize → data URL, disimpan ke field gambar) =====
+    // Batas keras sel Google Sheets ~50.000 char; worker membuang gambar >45.000
+    // char secara diam-diam, jadi gambar "hilang" setelah reload. Kompres bertahap
+    // sampai data URL benar-benar muat — kualitas diturunkan, bukan gambar dibuang.
     const MAX_DIM = 600, JPEG_Q = 0.82;
+    const MAX_DATA_URL = 44000;
+    // Kompres ulang data URL lama yang tersimpan sebelum batas sel diturunkan.
+    // Dipakai saat simpan config: gambar lama yang kebesaran dikecilkan otomatis,
+    // bukan ditolak / dibuang.
+    function shrinkDataUrl(dataUrl) {
+      return new Promise((resolve) => {
+        if (!dataUrl || dataUrl.length <= MAX_DATA_URL) { resolve(dataUrl || ""); return; }
+        const img = new Image();
+        img.onload = () => {
+          const cv = document.createElement("canvas");
+          const ctx = cv.getContext("2d");
+          let dim = MAX_DIM, q = JPEG_Q, out = "";
+          for (let i = 0; i < 10; i++) {
+            const scale = Math.min(1, dim / Math.max(img.width, img.height));
+            cv.width = Math.max(1, Math.round(img.width * scale));
+            cv.height = Math.max(1, Math.round(img.height * scale));
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            ctx.drawImage(img, 0, 0, cv.width, cv.height);
+            out = cv.toDataURL("image/jpeg", q);
+            if (out.length <= MAX_DATA_URL) break;
+            if (q > 0.35) q = Math.max(0.35, q - 0.12);
+            else dim = Math.round(dim * 0.75);
+          }
+          resolve(out);
+        };
+        img.onerror = () => resolve("");   // gambar rusak → kosongkan, jangan blokir simpan
+        img.src = dataUrl;
+      });
+    }
     function resizeImage(file) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
         img.onload = () => {
-          const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
-          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
           const cv = document.createElement("canvas");
-          cv.width = w; cv.height = h;
-          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          const ctx = cv.getContext("2d");
+          let dim = MAX_DIM, q = JPEG_Q, out = "";
+          for (let i = 0; i < 8; i++) {
+            const scale = Math.min(1, dim / Math.max(img.width, img.height));
+            cv.width = Math.max(1, Math.round(img.width * scale));
+            cv.height = Math.max(1, Math.round(img.height * scale));
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            ctx.drawImage(img, 0, 0, cv.width, cv.height);
+            out = cv.toDataURL("image/jpeg", q);
+            if (out.length <= MAX_DATA_URL) break;
+            // gambar masih terlalu besar: turunkan kualitas dulu, lalu dimensi
+            if (q > 0.4) q = Math.max(0.4, q - 0.15);
+            else dim = Math.round(dim * 0.75);
+          }
           URL.revokeObjectURL(url);
-          resolve(cv.toDataURL("image/jpeg", JPEG_Q));
+          if (out.length > MAX_DATA_URL) {
+            reject(new Error("Gambar terlalu besar — coba gambar yang lebih sederhana/kecil"));
+            return;
+          }
+          resolve(out);
         };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Gambar gagal dibaca")); };
         img.src = url;
@@ -1250,6 +1442,12 @@
 
     // ===== Pengaturan Metode Pembayaran =====
     let payCfg = [];   // [{id, nama, aktif, teks, gambar (dataUrl)}]
+    // "Belum Bayar" adalah metode sistem: id dan nama keduanya bisa muncul
+    // tergantung sumber data (config vs order lama), jadi cek keduanya.
+    const isBelumBayar = m => m && (m.id === "Belum Bayar" || m.nama === "Belum Bayar");
+    // Label yang dikirim ke order/checkout — selalu pakai `nama` supaya konsisten
+    // dengan data order lama yang menyimpan nama, bukan id.
+    const payLabel = m => m.nama || m.id || "";
     const PAY_DEFAULTS = [
       { id: "Tunai", nama: "Tunai", aktif: true, teks: "Bayar langsung di kasir.", gambar: "" },
       { id: "QRIS", nama: "QRIS", aktif: true, teks: "Scan QRIS di bawah untuk bayar.", gambar: "" },
@@ -1290,7 +1488,7 @@ async function loadPayConfig() {
       const box = document.getElementById("pay-cfg-list");
       box.innerHTML = "";
       // "Belum Bayar" adalah metode sistem — tidak perlu dikonfigurasi / diubah oleh admin
-      payCfg.filter(m => m.id !== "Belum Bayar").forEach(m => {
+      payCfg.filter(m => !isBelumBayar(m)).forEach(m => {
         const card = document.createElement("div");
         card.className = "paycfg-card" + (m.aktif ? "" : " off");
         card.innerHTML = `
@@ -1354,21 +1552,36 @@ async function loadPayConfig() {
     });
 
     document.getElementById("pay-cfg-save").addEventListener("click", async () => {
+      // Guard: payCfg kosong berarti config belum pernah dimuat. Menyimpan [] akan
+      // mengosongkan seluruh tab PayConfig dan menghapus metode + gambar yang sudah ada.
+      if (!payCfg.length) {
+        toast("Muat dulu pengaturan pembayaran sebelum menyimpan", true);
+        return;
+      }
       const btn = document.getElementById("pay-cfg-save");
       btn.disabled = true;
       try {
+        // Gambar lama bisa lebih besar dari batas sel (config dibuat sebelum batas
+        // diturunkan). Kompres otomatis supaya simpan tidak gagal.
+        const payload = [];
+        for (const m of payCfg) {
+          const gambar = await shrinkDataUrl(m.gambar || "");
+          if (gambar !== (m.gambar || "")) m.gambar = gambar;   // simpan hasil kompres ke state
+          payload.push({
+            id: m.id,
+            nama: m.nama,
+            aktif: isBelumBayar(m) ? true : !!m.aktif,
+            teks: m.teks || "",
+            gambar
+          });
+        }
         const res = await fetchJson(`${WORKER_URL}/api/payconfig`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ methods: payCfg.map(m => ({
-            id: m.id,
-            nama: m.nama,
-            aktif: m.id === "Belum Bayar" ? true : !!m.aktif,
-            teks: m.teks || "",
-            gambar: m.gambar || ""
-          })) })
+          body: JSON.stringify({ methods: payload })
         });
-        toast(`Pengaturan pembayaran tersimpan (${res.methods || payCfg.length}) ✓`);
+        toast(`Pengaturan pembayaran tersimpan (${res.methods || payload.length}) ✓`);
+        renderPayConfig();
         renderPayMethods();
       } catch (e) {
         console.error(e);
@@ -1800,6 +2013,7 @@ async function loadPayConfig() {
       document.getElementById("user-dropdown").style.display = "none";
       applyPrivilege();
       loadMenu().then(() => restoreCart());
+      loadPayConfig();   // muat metode pembayaran sekali di awal — kasir jangan pakai PAY_DEFAULTS
       if (session.role === "GUEST") {
         document.getElementById("status").style.display = "none";
       }
@@ -2181,8 +2395,8 @@ async function loadPayConfig() {
       const sel = document.getElementById("co-metode");
       sel.innerHTML = "";
       payCfg
-        .filter(m => m.aktif === true && m.id !== "Belum Bayar")
-        .forEach(m => { const o = document.createElement("option"); o.value = m.id || m.nama; o.textContent = m.nama; sel.appendChild(o); });
+        .filter(m => m.aktif === true && !isBelumBayar(m))
+        .forEach(m => { const o = document.createElement("option"); o.value = payLabel(m); o.textContent = payLabel(m); sel.appendChild(o); });
       if (!sel.options.length) { const o = document.createElement("option"); o.value = "Tunai"; o.textContent = "Tunai"; sel.appendChild(o); }
       addCoBahanRow();
       document.getElementById("custom-order-overlay").style.display = "flex";
@@ -2382,9 +2596,9 @@ async function loadPayConfig() {
 
       // Hitung total dan hari ini
       const totalAll = expenseList.reduce((s, p) => s + (Number(p.nominal) || 0), 0);
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = wibToday();
       const totalToday = expenseList
-        .filter(p => p.waktu && p.waktu.slice(0, 10) === todayStr)
+        .filter(p => p.waktu && wibDate(p.waktu) === todayStr)
         .reduce((s, p) => s + (Number(p.nominal) || 0), 0);
 
       document.getElementById("expense-total-display").textContent = rupiah(totalAll);
@@ -2483,16 +2697,19 @@ async function loadPayConfig() {
     let reportExpenses = [];
 
     let reportOpname = [];
+    let reportBahan = [];   // snapshot stok bahan (bukan per periode)
     async function loadReport() {
       try {
-        const [ordData, expData, opnData] = await Promise.all([
+        const [ordData, expData, opnData, bahanData] = await Promise.all([
           fetchJson(`${WORKER_URL}/api/orders`),
           fetchJson(`${WORKER_URL}/api/pengeluaran`).catch(() => []),
-          fetchJson(`${WORKER_URL}/api/bahan/opname`).catch(() => [])
+          fetchJson(`${WORKER_URL}/api/bahan/opname`).catch(() => []),
+          fetchJson(`${WORKER_URL}/api/bahan/list`).catch(() => [])
         ]);
         reportOrders = parseOrders(ordData);
         reportExpenses = expData || [];
         reportOpname = opnData || [];
+        reportBahan = Array.isArray(bahanData) ? bahanData : [];
         if (!menu || !menu.length) {
           await loadMenu();
         }
@@ -2503,13 +2720,45 @@ async function loadPayConfig() {
       }
     }
 
+    // Order dianggap belum lunas kalau statusnya BELUM_BAYAR ATAU metode masih
+    // "Belum Bayar". Status bisa naik (DIPROSES/SELESAI) tanpa settleOrder,
+    // jadi `metode` yang menentukan uang benar-benar masuk.
+    function isUnpaidOrder(o) {
+      if (!o) return false;
+      if (String(o.status || "").toUpperCase() === "BELUM_BAYAR") return true;
+      return String(o.metode || "").trim().toLowerCase() === "belum bayar";
+    }
+
+    // Tanggal kalender WIB (Asia/Jakarta) dari timestamp ISO.
+    // toISOString() = UTC; WIB = UTC+7, jadi 00:00–06:59 UTC jatuh ke hari sebelumnya.
+    const WIB_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit"
+    });
+    function wibDate(isoStr) {
+      if (!isoStr) return "";
+      const d = new Date(isoStr);
+      if (isNaN(d)) return String(isoStr).slice(0, 10);
+      return WIB_DATE_FMT.format(d);   // en-CA → YYYY-MM-DD
+    }
+    // Tanggal WIB hari ini
+    function wibToday() {
+      return WIB_DATE_FMT.format(new Date());
+    }
+    // Geser tanggal YYYY-MM-DD sebanyak n hari (kalender, bukan jam)
+    function shiftDate(dStr, days) {
+      const [y, m, d] = String(dStr).split("-").map(Number);
+      const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+      dt.setUTCDate(dt.getUTCDate() + days);
+      return dt.toISOString().slice(0, 10);
+    }
+
     function isDateInPeriod(isoStr, period, startDate, endDate) {
       if (!isoStr) return false;
-      const dStr = isoStr.slice(0, 10);
-      const today = new Date().toISOString().slice(0, 10);
+      const dStr = wibDate(isoStr);
+      const today = wibToday();
       if (period === "today") return dStr === today;
       if (period === "7days") {
-        const past7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const past7 = shiftDate(today, -6);   // hari ini + 6 hari ke belakang
         return dStr >= past7 && dStr <= today;
       }
       if (period === "month") return dStr.slice(0, 7) === today.slice(0, 7);
@@ -2522,6 +2771,54 @@ async function loadPayConfig() {
       return true;
     }
 
+    // Nilai stok bahan dalam Rupiah.
+    // stok disimpan dalam satuan dasar (gr/ml/unit), harga beli per kemasan `isi`.
+    // Gabung batch identik (nama+harga+isi) — sama seperti normalisasi resep.
+    function computeStokValue(bahanList) {
+      const map = {};
+      (bahanList || []).forEach(b => {
+        const nama = String(b.nama || "").trim();
+        if (!nama) return;
+        const key = `${nama}|${b.harga || ""}|${b.isi || ""}`;
+        if (!map[key]) map[key] = { nama, harga: Number(b.harga) || 0, isi: b.isi || "", stok: 0 };
+        map[key].stok += Number(b.stok) || 0;
+      });
+      return Object.values(map).map(r => {
+        const perUnit = toPerUnit(r.harga, r.isi);
+        // tanpa `isi` valid: anggap stok sudah dalam satuan beli
+        const nilai = perUnit ? r.stok * perUnit : 0;  // isi tidak valid → nilai tidak diketahui, anggap 0 (bukan r.harga*r.stok yang dimensinya salah)
+        return { ...r, perUnit, nilai };
+      }).sort((a, b) => b.nilai - a.nilai);
+    }
+
+    // Daftar tanggal penuh (YYYY-MM-DD) untuk chart sesuai periode.
+    // Hari tanpa penjualan WAJIB ikut, kalau tidak chart menyembunyikan hari nol.
+    function buildDateRange(period, startDate, endDate, saleDates) {
+      const sorted = (saleDates || []).slice().sort();
+      const today = wibToday();
+      let from = "", to = "";
+      if (period === "today") {
+        from = to = today;
+      } else if (period === "7days") {
+        from = shiftDate(today, -6);
+        to = today;
+      } else if (period === "month") {
+        from = today.slice(0, 7) + "-01";
+        to = today;
+      } else if (period === "custom") {
+        from = startDate || (sorted[0] || today);
+        to = endDate || (sorted[sorted.length - 1] || today);
+      } else {   // all — rentang dari transaksi pertama sampai terakhir
+        if (!sorted.length) return [];
+        from = sorted[0];
+        to = sorted[sorted.length - 1];
+      }
+      if (!from || !to || from > to) return [];
+      const out = [];
+      for (let d = from; d <= to; d = shiftDate(d, 1)) out.push(d);
+      return out;
+    }
+
     function renderReport() {
       const period = document.getElementById("report-period").value;
       const startDate = document.getElementById("report-date-start").value;
@@ -2532,37 +2829,42 @@ async function loadPayConfig() {
       const validExpenses = reportExpenses.filter(p => isDateInPeriod(p.waktu, period, startDate, endDate));
 
       // 1. KPI Calculations
-      // Piutang = BELUM_BAYAR orders (belum lunas, tidak masuk omset)
-      const piutangOrders = validOrders.filter(o => o.status === "BELUM_BAYAR");
+      // Piutang = order yang belum lunas. `metode` adalah sumber kebenaran:
+      // order bisa berstatus SELESAI/DIPROSES tapi metode masih "Belum Bayar"
+      // (status naik tanpa lewat settleOrder), jadi status saja tidak cukup.
+      const piutangOrders = validOrders.filter(isUnpaidOrder);
       const totalPiutang = piutangOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
-      // Omset hanya dari yang sudah LUNAS (exclude BELUM_BAYAR)
-      const paidOrders = validOrders.filter(o => o.status !== "BELUM_BAYAR");
+      const paidOrders = validOrders.filter(o => !isUnpaidOrder(o));
       const totalOmset = paidOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
       const totalTx = paidOrders.length;
       const avgTx = totalTx ? Math.round(totalOmset / totalTx) : 0;
 
-      // Map modal menu
-      const modalMap = {};
-      (menu || []).forEach(m => {
-        const mCost = Number(m.modal) || 0;
-        if (m.nama) modalMap[m.nama] = mCost;
-        if (m.variants) {
-          m.variants.forEach(v => {
-            const vCost = Number(v.modal) || mCost;
-            if (v.nama) modalMap[v.nama] = vCost;
-            if (v.size && m.nama) modalMap[`${m.nama}|${v.size}`] = vCost;
-          });
-        }
-      });
-
+      // HPP: utamakan modal yang direkam SAAT order dibuat (historis, tahan
+      // perubahan harga bahan). `modalMap` cuma fallback untuk order lama yang
+      // belum punya hargaModal, dan nilainya sudah modal per qty×item.
       let totalHPP = 0;
       paidOrders.forEach(o => {
-        (o.items || []).forEach(it => {
+        const items = o.items || [];
+        items.forEach(it => {
           const baseNama = String(it.nama || "").split("|")[0].trim();
-          const m = modalMap[it.nama] || modalMap[baseNama] || it.hargaModal || 0;
-          totalHPP += m * (Number(it.qty) || 1);
+          const qty = it.qty != null && Number(it.qty) > 0 ? Number(it.qty) : 1;  // falsy-zero guard: qty=0 → 1 hanya jika null/undefined/0
+          if (it.hargaModal !== undefined && it.hargaModal !== null && it.hargaModal !== "") {
+            totalHPP += Number(it.hargaModal) || 0;
+            return;
+          }
+          // custom order lama: modal tersimpan di level order
+          if (it._custom && o.hargaModal !== undefined) {
+            totalHPP += (Number(o.hargaModal) || 0) / Math.max(items.length, 1);
+            return;
+          }
+          const m = modalMap[it.nama] || modalMap[baseNama] || 0;
+          totalHPP += m * qty;
         });
       });
+
+      // Nilai stok bahan (Rp) — snapshot saat ini, tidak terpengaruh filter periode
+      const stokRows = computeStokValue(reportBahan);
+      const totalStokValue = stokRows.reduce((s, r) => s + r.nilai, 0);
 
       const totalExpense = validExpenses.reduce((s, p) => s + (Number(p.nominal) || 0), 0);
       // [STOK OPNAME] filter loss bahan sesuai periode
@@ -2587,65 +2889,79 @@ async function loadPayConfig() {
       document.getElementById("rep-net-profit").textContent = rupiah(netProfit);
       document.getElementById("rep-margin-pct").textContent = `Margin bersih ${marginPct}%`;
 
+      // Nilai stok bahan
+      document.getElementById("rep-stok-value").textContent = rupiah(totalStokValue);
+      document.getElementById("rep-stok-count").textContent = `${stokRows.length} bahan · stok saat ini`;
+      document.getElementById("rep-stok-total-inline").textContent = `Total ${rupiah(totalStokValue)}`;
+      const stokBody = document.getElementById("rep-stok-body");
+      stokBody.innerHTML = "";
+      if (!stokRows.length) {
+        stokBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#a0815f;padding:10px">Belum ada data bahan.</td></tr>`;
+      } else {
+        stokRows.forEach(r => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(r.nama)}</strong></td>
+            <td>${(Number(r.stok) || 0).toLocaleString("id-ID")}</td>
+            <td>${rupiah(r.harga)}</td>
+            <td style="color:#a0815f">${escapeHtml(r.isi || "—")}</td>
+            <td style="color:#1a4f8a;font-weight:700">${rupiah(Math.round(r.nilai))}</td>
+          `;
+          stokBody.appendChild(tr);
+        });
+      }
+
       // 2. Trend Penjualan Harian (Chart Batang)
       const chartBox = document.getElementById("rep-chart-container");
       chartBox.innerHTML = "";
       const dailyMap = {};
       paidOrders.forEach(o => {
-        const d = (o.waktu || "").slice(0, 10);
+        const d = wibDate(o.waktu);
         if (d) dailyMap[d] = (dailyMap[d] || 0) + (Number(o.total) || 0);
       });
-      const dates = Object.keys(dailyMap).sort();
-      if (!dates.length) {
+      // Rentang tanggal penuh: hari tanpa penjualan tetap ditampilkan sebagai bar nol,
+      // supaya chart tidak menyembunyikan hari kosong di antara dua hari ramai.
+      const dates = buildDateRange(period, startDate, endDate, Object.keys(dailyMap));
+      const anySale = dates.some(d => (dailyMap[d] || 0) > 0);
+      if (!dates.length || !anySale) {
         chartBox.innerHTML = `<div style="color:#a0815f;font-size:.82rem;margin:auto">Belum ada data penjualan pada periode ini.</div>`;
       } else {
-        const maxOmset = Math.max(...Object.values(dailyMap), 1);
+        const maxOmset = Math.max(...dates.map(d => dailyMap[d] || 0), 1);
         dates.forEach(d => {
-          const val = dailyMap[d];
-          const barHeight = Math.max(8, Math.round((val / maxOmset) * 85));
+          const val = dailyMap[d] || 0;
+          // bar nol tetap punya tinggi minimum supaya tanggalnya terbaca
+          const barHeight = val > 0 ? Math.max(8, Math.round((val / maxOmset) * 85)) : 2;
           const col = document.createElement("div");
           col.style.cssText = "display:flex;flex-direction:column;align-items:center;min-width:44px;flex:1";
           const dayLabel = d.slice(8, 10) + "/" + d.slice(5, 7);
+          const barBg = val > 0
+            ? "linear-gradient(180deg,#2b7a4b,#4fa372)"
+            : "#e6ddd1";
           col.innerHTML = `
-            <div style="font-size:.65rem;color:#2b7a4b;font-weight:700;margin-bottom:4px;white-space:nowrap">${val >= 1000 ? Math.round(val/1000) + 'k' : val}</div>
-            <div style="width:100%;max-width:32px;height:${barHeight}px;background:linear-gradient(180deg,#2b7a4b,#4fa372);border-radius:4px 4px 0 0" title="${d}: ${rupiah(val)}"></div>
+            <div style="font-size:.65rem;color:${val > 0 ? "#2b7a4b" : "#a0815f"};font-weight:700;margin-bottom:4px;white-space:nowrap">${val >= 1000 ? Math.round(val/1000) + 'k' : val}</div>
+            <div style="width:100%;max-width:32px;height:${barHeight}px;background:${barBg};border-radius:4px 4px 0 0" title="${d}: ${rupiah(val)}${val > 0 ? "" : " (tidak ada penjualan)"}"></div>
             <div style="font-size:.68rem;color:#a0815f;margin-top:4px;font-weight:600">${dayLabel}</div>
           `;
           chartBox.appendChild(col);
         });
       }
 
-      // 3. Top Selling Menu
+      // 3. Top Selling Menu (data-only — rendered below in Section 5 with margin columns)
       const topItems = {};
       paidOrders.forEach(o => {
         (o.items || []).forEach(it => {
           if (!it.nama) return;
           if (!topItems[it.nama]) topItems[it.nama] = { qty: 0, omset: 0 };
-          topItems[it.nama].qty += Number(it.qty) || 1;
-          topItems[it.nama].omset += (Number(it.harga) || 0) * (Number(it.qty) || 1);
+          const itQty = it.qty != null && Number(it.qty) > 0 ? Number(it.qty) : 1;
+          topItems[it.nama].qty += itQty;
+          topItems[it.nama].omset += (Number(it.harga) || 0) * itQty;
         });
       });
       const sortedItems = Object.entries(topItems)
         .map(([nama, data]) => ({ nama, ...data }))
         .sort((a, b) => b.qty - a.qty)
         .slice(0, 10);
-
-      const topBody = document.getElementById("rep-top-body");
-      topBody.innerHTML = "";
-      if (!sortedItems.length) {
-        topBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#a0815f;padding:10px">Belum ada menu terjual.</td></tr>`;
-      } else {
-        sortedItems.forEach((it, idx) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td style="font-weight:700;color:${idx === 0 ? "#b3641a" : "#6b3f24"}">${idx + 1}</td>
-            <td><strong>${escapeHtml(formatItemName(it.nama))}</strong></td>
-            <td>${it.qty}</td>
-            <td style="color:#2b7a4b;font-weight:600">${rupiah(it.omset)}</td>
-          `;
-          topBody.appendChild(tr);
-        });
-      }
+      // topBody rendered once in Section 5 (6-column with margin) — no first-pass render here
 
       // 4. Metode Pembayaran Breakdown
       const payMap = {};
@@ -2674,6 +2990,252 @@ async function loadPayConfig() {
           payBody.appendChild(tr);
         });
       }
+
+      // 5. Margin per Menu (update top table with laba kotor + margin %)
+      const marginByMenu = {};
+      paidOrders.forEach(o => {
+        const items = o.items || [];
+        items.forEach(it => {
+          if (!it.nama) return;
+          const qty = it.qty != null && Number(it.qty) > 0 ? Number(it.qty) : 1;
+          const omsetItem = (Number(it.harga) || 0) * qty;
+          let hppItem = 0;
+          if (it.hargaModal !== undefined && it.hargaModal !== null && it.hargaModal !== "") {
+            hppItem = Number(it.hargaModal) || 0;
+          } else if (it._custom && o.hargaModal !== undefined) {
+            hppItem = (Number(o.hargaModal) || 0) / Math.max(items.length, 1);
+          } else {
+            const baseNama = String(it.nama || "").split("|")[0].trim();
+            const m = modalMap[it.nama] || modalMap[baseNama] || 0;
+            hppItem = m * qty;
+          }
+          if (!marginByMenu[it.nama]) marginByMenu[it.nama] = { laba: 0, omset: 0 };
+          marginByMenu[it.nama].laba += omsetItem - hppItem;
+          marginByMenu[it.nama].omset += omsetItem;
+        });
+      });
+      // Render top table once, with margin columns
+      const topBody = document.getElementById("rep-top-body");
+      topBody.innerHTML = "";
+      if (!sortedItems.length) {
+        topBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#a0815f;padding:10px">Belum ada menu terjual.</td></tr>`;
+      } else {
+        sortedItems.forEach((it, idx) => {
+          const mb = marginByMenu[it.nama] || { laba: 0, omset: 0 };
+          const marginPctItem = mb.omset > 0 ? Math.round((mb.laba / mb.omset) * 100) : 0;
+          const marginColor = marginPctItem >= 50 ? "#137333" : marginPctItem >= 25 ? "#b3641a" : "#b3261e";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="font-weight:700;color:${idx === 0 ? "#b3641a" : "#6b3f24"}">${idx + 1}</td>
+            <td><strong>${escapeHtml(formatItemName(it.nama))}</strong></td>
+            <td>${it.qty}</td>
+            <td style="color:#2b7a4b;font-weight:600">${rupiah(it.omset)}</td>
+            <td style="color:${marginColor};font-weight:600">${rupiah(Math.round(mb.laba))}</td>
+            <td><span class="badge" style="background:${marginPctItem>=50?"#e6f4ea":marginPctItem>=25?"#fef7e0":"#fce8e6"};color:${marginColor}">${marginPctItem}%</span></td>
+          `;
+          topBody.appendChild(tr);
+        });
+      }
+
+      // 6. Aging Piutang
+      const today = wibToday();
+      const agingBuckets = [
+        { label: "0–7 hari", min: 0, max: 7, orders: [], color: "#fff8d6" },
+        { label: "8–30 hari", min: 8, max: 30, orders: [], color: "#ffe0b2" },
+        { label: "> 30 hari", min: 31, max: Infinity, orders: [], color: "#fbe3e1" }
+      ];
+      piutangOrders.forEach(o => {
+        const oDate = wibDate(o.waktu);
+        if (!oDate) return;
+        const [ty, tm, td] = today.split("-").map(Number);
+        const [oy, om, od] = oDate.split("-").map(Number);
+        const diffMs = Date.UTC(ty, tm-1, td) - Date.UTC(oy, om-1, od);
+        const age = Math.max(0, Math.floor(diffMs / 86400000));  // clamp negatif → 0 (order masa depan / edge timezone)
+        const bucket = agingBuckets.find(b => age >= b.min && age <= b.max);
+        if (bucket) bucket.orders.push({ ...o, age });
+      });
+      const agingBody = document.getElementById("rep-aging-body");
+      agingBody.innerHTML = "";
+      agingBuckets.forEach(b => {
+        const total = b.orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="badge" style="background:${b.color};color:#555;font-weight:700">${b.label}</span></td>
+          <td>${b.orders.length} order</td>
+          <td style="font-weight:700;color:${total>0?"#b3261e":"#6b3f24"}">${rupiah(total)}</td>
+        `;
+        agingBody.appendChild(tr);
+      });
+      const allAgingOrders = agingBuckets.flatMap(b => b.orders).sort((a, b) => b.age - a.age);
+      const agingDetail = document.getElementById("rep-aging-detail");
+      agingDetail.innerHTML = "";
+      allAgingOrders.forEach(o => {
+        const tr = document.createElement("tr");
+        const ageColor = o.age > 30 ? "#b3261e" : o.age > 7 ? "#b3641a" : "#a07800";
+        tr.innerHTML = `
+          <td style="font-size:.78rem">${escapeHtml(o.invoice || "")}</td>
+          <td style="font-size:.78rem">${escapeHtml(wibDate(o.waktu))}</td>
+          <td style="font-size:.78rem">${escapeHtml(o.username || "guest")}</td>
+          <td style="font-weight:700;color:#b3261e">${rupiah(Number(o.total)||0)}</td>
+          <td><span class="badge" style="background:${o.age>30?"#fbe3e1":o.age>7?"#ffe0b2":"#fff8d6"};color:${ageColor}">${o.age}h</span></td>
+        `;
+        agingDetail.appendChild(tr);
+      });
+      // Toggle detail: set onclick once (onclick is a property — safe to reassign, but skip if detail is open to preserve state)
+      const agingToggle = document.getElementById("rep-aging-toggle");
+      const agingDetailWrap = document.getElementById("rep-aging-detail-wrap");
+      if (!agingToggle._bound) {
+        agingToggle._bound = true;
+        agingToggle.onclick = () => {
+          const shown = agingDetailWrap.style.display !== "none";
+          agingDetailWrap.style.display = shown ? "none" : "block";
+          agingToggle.textContent = shown ? "▼ Lihat Detail" : "▲ Tutup Detail";
+        };
+      }
+
+      // 7. Bahan Kritis
+      const kritisBody = document.getElementById("rep-kritis-body");
+      kritisBody.innerHTML = "";
+      if (!reportBahan || !reportBahan.length) {
+        kritisBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#a0815f;padding:10px">Data bahan tidak tersedia.</td></tr>`;
+      } else {
+        // Hitung usage per bahan dari resep & paid orders
+        const bahanUsage = {};
+        paidOrders.forEach(o => {
+          (o.items || []).forEach(it => {
+            const baseNama = String(it.nama || "").split("|")[0].trim();
+            const qty = Number(it.qty) || 1;
+            // cari di recipeState.resep jika ada
+            const resepSrc = (typeof recipeState !== "undefined" && recipeState && Array.isArray(recipeState.resep))
+              ? recipeState.resep : [];
+            const komposisi = resepSrc.filter(r => r.nama === it.nama || r.nama === baseNama);
+            komposisi.forEach(k => {
+              const bh = k.bahan;
+              if (!bahanUsage[bh]) bahanUsage[bh] = 0;
+              bahanUsage[bh] += (Number(k.jumlah) || 0) * qty;
+            });
+          });
+        });
+        const sortedBahan = [...reportBahan].sort((a, b) => (Number(a.stok)||0) - (Number(b.stok)||0));
+        // Hoist unique-day count: compute once, not per-bahan (was O(bahan × orders))
+        const uniqueDays = paidOrders.length > 0 ? Math.max(1, new Set(paidOrders.map(o => wibDate(o.waktu))).size) : 1;
+        let kritisCount = 0;
+        sortedBahan.forEach(b => {
+          const stok = Number(b.stok) || 0;
+          // Threshold: ≤ 5 unit atau ≤ estimasi pasokan 3 hari
+          const totalUsed = bahanUsage[b.nama] || 0;
+          const days = uniqueDays;
+          const dailyUse = totalUsed / days;
+          const daysLeft = dailyUse > 0 ? Math.floor(stok / dailyUse) : null;
+          const isKritis = stok <= 5 || (daysLeft !== null && daysLeft <= 3);
+          if (!isKritis) return;
+          kritisCount++;
+          const statusColor = stok === 0 ? "#b3261e" : daysLeft !== null && daysLeft <= 1 ? "#b3641a" : "#a07800";
+          const statusLabel = stok === 0 ? "🔴 HABIS" : daysLeft !== null && daysLeft <= 1 ? "🟠 Kritis" : "🟡 Rendah";
+          const estPorsi = daysLeft !== null ? `~${daysLeft} hari` : `${stok} unit`;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(b.nama)}</strong></td>
+            <td style="font-weight:700;color:${statusColor}">${(stok).toLocaleString("id-ID")} ${escapeHtml(b.satuan||"")}</td>
+            <td style="color:#6b3f24">${estPorsi}</td>
+            <td><span class="badge" style="background:${stok===0?"#fbe3e1":daysLeft!==null&&daysLeft<=1?"#ffe0b2":"#fff8d6"};color:${statusColor}">${statusLabel}</span></td>
+          `;
+          kritisBody.appendChild(tr);
+        });
+        if (!kritisCount) {
+          kritisBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#137333;padding:10px">✅ Semua bahan dalam kondisi aman.</td></tr>`;
+        }
+      }
+
+      // 8. Laporan per Kasir
+      const kasirMap = {};
+      paidOrders.forEach(o => {
+        const k = o.username || "guest";
+        if (!kasirMap[k]) kasirMap[k] = { tx: 0, omset: 0 };
+        kasirMap[k].tx++;
+        kasirMap[k].omset += Number(o.total) || 0;
+      });
+      const kasirBody = document.getElementById("rep-kasir-body");
+      kasirBody.innerHTML = "";
+      const kasirEntries = Object.entries(kasirMap).sort((a, b) => b[1].omset - a[1].omset);
+      if (!kasirEntries.length) {
+        kasirBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#a0815f;padding:10px">Belum ada transaksi.</td></tr>`;
+      } else {
+        kasirEntries.forEach(([kasir, d]) => {
+          const avg = d.tx > 0 ? Math.round(d.omset / d.tx) : 0;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(kasir)}</strong></td>
+            <td>${d.tx} tx</td>
+            <td style="color:#2b7a4b;font-weight:600">${rupiah(d.omset)}</td>
+            <td style="color:#6b3f24">${rupiah(avg)}</td>
+          `;
+          kasirBody.appendChild(tr);
+        });
+      }
+
+      // 9. Rekap Order BATAL
+      const batalOrders = reportOrders.filter(o =>
+        isDateInPeriod(o.waktu, period, startDate, endDate) && o.status === "BATAL"
+      );
+      const totalBatal = batalOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      document.getElementById("rep-batal-inline").textContent =
+        `${batalOrders.length} order · ${rupiah(totalBatal)} potensi hilang`;
+      const batalBody = document.getElementById("rep-batal-body");
+      batalBody.innerHTML = "";
+      if (!batalOrders.length) {
+        batalBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#137333;padding:10px">✅ Tidak ada order dibatalkan.</td></tr>`;
+      } else {
+        batalOrders.sort((a, b) => (b.waktu || "").localeCompare(a.waktu || "")).forEach(o => {
+          const itemStr = (o.items || []).map(it => `${formatItemName(it.nama)} ×${it.qty||1}`).join(", ");
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="font-size:.78rem">${escapeHtml(o.invoice || "")}</td>
+            <td style="font-size:.78rem">${escapeHtml(wibDate(o.waktu))}</td>
+            <td style="font-size:.78rem">${escapeHtml(o.username || "guest")}</td>
+            <td style="font-weight:700;color:#b3261e">${rupiah(Number(o.total)||0)}</td>
+            <td style="font-size:.75rem;color:#6b3f24;max-width:200px;word-break:break-word">${escapeHtml(itemStr)}</td>
+          `;
+          batalBody.appendChild(tr);
+        });
+      }
+
+      // 10. Heatmap Jam Sibuk
+      const hourMap = {};
+      for (let h = 0; h < 24; h++) hourMap[h] = { tx: 0, omset: 0 };
+      paidOrders.forEach(o => {
+        if (!o.waktu) return;
+        const d = new Date(o.waktu);
+        if (isNaN(d)) return;
+        const hour = Number(new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Jakarta", hour: "numeric", hour12: false
+        }).format(d));
+        const h = hour % 24;
+        hourMap[h].tx++;
+        hourMap[h].omset += Number(o.total) || 0;
+      });
+      const maxTx = Math.max(...Object.values(hourMap).map(v => v.tx), 1);
+      const heatmap = document.getElementById("rep-heatmap");
+      heatmap.innerHTML = "";
+      for (let h = 0; h < 24; h++) {
+        const d = hourMap[h];
+        const intensity = Math.round((d.tx / maxTx) * 100);
+        const alpha = d.tx > 0 ? Math.max(0.15, intensity / 100) : 0.05;
+        const bg = d.tx > 0
+          ? `rgba(107, 63, 36, ${alpha})`
+          : "#f5f0ea";
+        const textColor = intensity > 60 ? "#fff" : "#6b3f24";
+        const label = String(h).padStart(2, "0") + ":00";
+        const cell = document.createElement("div");
+        cell.title = `${label} — ${d.tx} transaksi · ${rupiah(d.omset)}`;
+        cell.style.cssText = `width:52px;height:52px;border-radius:8px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:${d.tx>0?"pointer":"default"};border:1px solid #e8ddd1`;
+        cell.innerHTML = `
+          <div style="font-size:.68rem;font-weight:700;color:${textColor}">${label}</div>
+          <div style="font-size:.75rem;font-weight:800;color:${textColor}">${d.tx}</div>
+          <div style="font-size:.6rem;color:${intensity>60?"rgba(255,255,255,.8)":"#a0815f"}">${d.omset>=1000?Math.round(d.omset/1000)+"k":""}</div>
+        `;
+        heatmap.appendChild(cell);
+      }
     }
 
     // Export CSV
@@ -2684,8 +3246,8 @@ async function loadPayConfig() {
       const validOrders = reportOrders.filter(o => isDateInPeriod(o.waktu, period, startDate, endDate) && o.status !== "BATAL");
       const validExpenses = reportExpenses.filter(p => isDateInPeriod(p.waktu, period, startDate, endDate));
 
-      const paidOrdersCsv = validOrders.filter(o => o.status !== "BELUM_BAYAR");
-      const piutangOrdersCsv = validOrders.filter(o => o.status === "BELUM_BAYAR");
+      const paidOrdersCsv = validOrders.filter(o => !isUnpaidOrder(o));
+      const piutangOrdersCsv = validOrders.filter(isUnpaidOrder);
       const totalOmset = paidOrdersCsv.reduce((s, o) => s + (Number(o.total) || 0), 0);
       const totalPiutangCsv = piutangOrdersCsv.reduce((s, o) => s + (Number(o.total) || 0), 0);
       const totalExpense = validExpenses.reduce((s, p) => s + (Number(p.nominal) || 0), 0);
@@ -2699,7 +3261,17 @@ async function loadPayConfig() {
       csv += `Total Transaksi Lunas;${paidOrdersCsv.length}\n`;
       csv += `Piutang (Belum Bayar);${totalPiutangCsv}\n`;
       csv += `Jumlah Order Belum Lunas;${piutangOrdersCsv.length}\n`;
-      csv += `Total Kas Keluar;${totalExpense}\n\n`;
+      csv += `Total Kas Keluar;${totalExpense}\n`;
+      const stokRowsCsv = computeStokValue(reportBahan);
+      const totalStokCsv = stokRowsCsv.reduce((s, r) => s + r.nilai, 0);
+      csv += `Nilai Stok Bahan (Rp);${Math.round(totalStokCsv)}\n\n`;
+
+      csv += `=== RINCIAN NILAI STOK BAHAN ===\n`;
+      csv += `Bahan;Stok;Harga Beli;Isi;Nilai Stok\n`;
+      stokRowsCsv.forEach(r => {
+        csv += `"${r.nama.replace(/"/g, '""')}";${r.stok};${r.harga};"${(r.isi || '').replace(/"/g, '""')}";${Math.round(r.nilai)}\n`;
+      });
+      csv += `\n`;
 
       csv += `=== RINCIAN TRANSAKSI ===\n`;
       csv += `Invoice;Waktu;Kasir/Pelanggan;Item;Total;Status;Metode\n`;
@@ -2721,7 +3293,7 @@ async function loadPayConfig() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Laporan_DELTA_Coffee_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `Laporan_DELTA_Coffee_${wibToday()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2746,6 +3318,7 @@ async function loadPayConfig() {
       try {
         const data = await fetchJson(`${WORKER_URL}/api/menu`);
         menu = Array.isArray(data) ? data : data.menu;
+        buildModalMap();   // rebuild modalMap once per menu load, not per renderReport
         renderBahanMenipis(Array.isArray(data) ? [] : data.bahanMenipis);
         populateCats();
         renderMenu();
@@ -3198,18 +3771,9 @@ async function loadPayConfig() {
       });
       document.getElementById("pay-summary").innerHTML = sumHtml;
       document.getElementById("pay-total").textContent = rupiah(total);
-      const pmBox = document.getElementById("pay-methods");
-      const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
-      // hanya metode aktif; "Belum Bayar" hanya untuk staf kasir/admin
-      const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
-        .filter(m => m.aktif && (m.nama !== "Belum Bayar" || isStaff))
-        .map(m => m.nama);
-      if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
-      pmBox.innerHTML = list.map(m =>
-        `<div class="pm ${m === payMetode ? "active" : ""}" data-m="${m}">${m}</div>`).join("");
-      renderPayInstr();
       document.getElementById("pay-overlay").style.display = "flex";
       overlayCount++;
+      renderPayMethods();   // satu sumber render metode — jangan duplikasi filter di sini
     }
     document.getElementById("pay-methods").addEventListener("click", e => {
       const el = e.target.closest(".pm");
@@ -3223,19 +3787,21 @@ async function loadPayConfig() {
       const pmBox = document.getElementById("pay-methods");
       if (!pmBox || !pmBox.closest(".overlay") || pmBox.closest(".overlay").style.display === "none") return;
       const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
+      // hanya metode aktif; "Belum Bayar" hanya untuk staf kasir/admin
       const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
-        .filter(m => m.aktif && (m.nama !== "Belum Bayar" || isStaff))
-        .map(m => m.nama);
-      if (!list.includes(payMetode)) payMetode = list[0] || "Tunai";
+        .filter(m => m.aktif && (!isBelumBayar(m) || isStaff))
+        .map(payLabel);
+      if (!list.length) list.push("Tunai");
+      if (!list.includes(payMetode)) payMetode = list[0];
       pmBox.innerHTML = list.map(m =>
-        `<div class="pm ${m === payMetode ? "active" : ""}" data-m="${m}">${m}</div>`).join("");
+        `<div class="pm ${m === payMetode ? "active" : ""}" data-m="${escapeAttr(m)}">${escapeHtml(m)}</div>`).join("");
       renderPayInstr();
     }
     // instruksi bayar utk metode terpilih (teks + gambar QR/rekening)
     function renderPayInstr() {
       const box = document.getElementById("pay-instr");
       if (!box) return;
-      const m = (payCfg.length ? payCfg : PAY_DEFAULTS).find(x => x.nama === payMetode);
+      const m = (payCfg.length ? payCfg : PAY_DEFAULTS).find(x => payLabel(x) === payMetode);
       const teks = m && m.teks;
       const img = m && m.gambar;
       if (!teks && !img) { box.style.display = "none"; box.innerHTML = ""; return; }
@@ -3259,7 +3825,7 @@ async function loadPayConfig() {
         // guest: catat juga di localStorage — riwayat sesi sampai logout
         if (session && session.role === "GUEST") {
           const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || (payMetode === "Belum Bayar" ? "BELUM_BAYAR" : "BARU") });
+          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || "BARU" });
           localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
         }
         toast(`Invoice ${data.invoice || data.id} — ${payMetode} ✓`);
@@ -3368,7 +3934,10 @@ async function loadPayConfig() {
         return {
           id: o.id, invoice: o.invoice || o.id, waktu: o.waktu, items: Array.isArray(rawItems) ? rawItems : [],
           total: Number(o.total) || 0, status: (o.status || "BARU").toUpperCase(),
-          username: o.username || "guest", metode: o.metode || "Tunai"
+          username: o.username || "guest", metode: o.metode || "Tunai",
+          // HPP historis: dibutuhkan laporan laba, jangan buang saat parsing
+          hargaModal: Number.isFinite(Number(o.hargaModal)) && o.hargaModal !== "" ? Number(o.hargaModal) : undefined,
+          _customOrder: !!(o._customOrder || (Array.isArray(rawItems) && rawItems.some(i => i && i._custom)))
         };
       }).sort((a, b) => String(b.invoice).localeCompare(String(a.invoice)));
     }
@@ -3381,11 +3950,11 @@ async function loadPayConfig() {
       });
     }
 
-    const STATUS_LIST = ["BARU", "BELUM_BAYAR", "DIPROSES", "SELESAI", "BATAL"];
-    const STATUS_LABEL = { "BARU": "Baru", "BELUM_BAYAR": "Belum Bayar", "DIPROSES": "Diproses", "SELESAI": "Selesai", "BATAL": "Batal" };
-    const STATUS_RANK = { "BARU": 0, "BELUM_BAYAR": 1, "DIPROSES": 2, "SELESAI": 3 };
+    const STATUS_LIST = ["BARU", "DIPROSES", "BELUM_BAYAR", "SELESAI", "BATAL"];
+    const STATUS_LABEL = { "BARU": "Baru", "DIPROSES": "Diproses", "BELUM_BAYAR": "Belum Bayar", "SELESAI": "Selesai", "BATAL": "Batal" };
+    const STATUS_RANK = { "BARU": 0, "DIPROSES": 1, "BELUM_BAYAR": 2, "SELESAI": 3 };
     function statusPill(st, id, metode) {
-      const map = { "BARU": "st-baru", "BELUM_BAYAR": "st-belum-bayar", "DIPROSES": "st-diproses", "SELESAI": "st-selesai", "BATAL": "st-batal" };
+      const map = { "BARU": "st-baru", "DIPROSES": "st-diproses", "BELUM_BAYAR": "st-belum-bayar", "SELESAI": "st-selesai", "BATAL": "st-batal" };
       const cls = map[st] || "st-baru";
       const canEdit = session && (session.role === "ADMIN" || session.role === "KASIR");
 
@@ -3394,14 +3963,14 @@ async function loadPayConfig() {
         if (!canEdit) {
           return `<span class="status-select ${cls}" style="cursor:default;">Belum Bayar</span>`;
         }
-        return `<button class="status-select ${cls} settle-btn" data-id="${escapeHtml(String(id))}" style="cursor:pointer;border:1px solid #d4a017;" title="Klik untuk cairkan pembayaran">Belum Bayar</button>`;
+        return `<button class="status-select ${cls} settle-btn" data-id="${escapeHtml(String(id))}" title="Klik untuk cairkan pembayaran">Belum Bayar</button>`;
       }
 
       // Unknown status: default to highest rank to prevent changes
       const curIdx = STATUS_RANK[st] !== undefined ? STATUS_RANK[st] : 99;
       const isTerminal = st === "SELESAI" || st === "BATAL";
       // Jika sedari awal sudah pilih salah satu pembayaran (bukan "Belum Bayar"), status belum bayar di-offkan
-      const isPaidMethod = Boolean(metode && metode !== "Belum Bayar");
+      const isPaidMethod = Boolean(metode && String(metode).trim().toLowerCase() !== "belum bayar");
 
       const opts = STATUS_LIST.map(s => {
         let disOpt = "";
@@ -3413,6 +3982,10 @@ async function loadPayConfig() {
           disOpt = ""; // boleh batal dari BARU, DIPROSES
         } else if (s === "BELUM_BAYAR" && isPaidMethod) {
           disOpt = " disabled"; // sedari awal sudah pilih pembayaran lain → offkan
+        } else if (s === "BELUM_BAYAR" && st !== "DIPROSES") {
+          disOpt = " disabled"; // alur jika belum bayar: Baru > Diproses > Belum bayar (harus lewat Diproses)
+        } else if (s === "SELESAI" && !isPaidMethod) {
+          disOpt = " disabled"; // belum bayar harus dicairkan melalui tombol cairkan
         } else if ((STATUS_RANK[s] ?? 99) <= curIdx) {
           disOpt = " disabled"; // status mundur atau sama dinonaktifkan
         }
@@ -3529,10 +4102,7 @@ async function loadPayConfig() {
           const note = i.catatan ? `<br><span class="item-catatan-tag">${escapeHtml(i.catatan)}</span>` : "";
           return `<span>${main}${note}</span>`;
         }).join("<span style=\"color:#c2b19e\">, </span>");
-        // hanya tampilkan metode yang aktif (toggle switch on)
-        const metodeAktif = (payCfg.length ? payCfg : PAY_DEFAULTS)
-          .find(m => m.id === o.metode || m.nama === o.metode);
-        const metodeDisplay = metodeAktif && metodeAktif.aktif ? escapeHtml(o.metode || "-") : "-";
+        const metodeDisplay = escapeHtml(o.metode || "-");
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${formatWaktu(o.waktu)}</td>
@@ -3584,8 +4154,18 @@ async function loadPayConfig() {
         loadKasirHistory();
         return;
       }
-      if (newSt === "BELUM_BAYAR" && o && o.metode && o.metode !== "Belum Bayar") {
+      if (newSt === "BELUM_BAYAR" && o && o.metode && String(o.metode).trim().toLowerCase() !== "belum bayar") {
         toast("Pesanan sudah memilih pembayaran — status Belum Bayar tidak aktif", true);
+        loadKasirHistory();
+        return;
+      }
+      if (newSt === "BELUM_BAYAR" && curSt !== "DIPROSES") {
+        toast("Status Belum Bayar harus melalui status Diproses", true);
+        loadKasirHistory();
+        return;
+      }
+      if (newSt === "SELESAI" && o && o.metode && String(o.metode).trim().toLowerCase() === "belum bayar") {
+        toast("Pesanan belum bayar harus dicairkan melalui pembayaran", true);
         loadKasirHistory();
         return;
       }
@@ -3604,7 +4184,6 @@ async function loadPayConfig() {
       sel.disabled = true;
       updateStatus(sel.dataset.id, sel.value).finally(() => {
         sel.disabled = false;
-        loadKasirHistory();
         loadMenu();   // refresh porsi stok di menu kasir
       });
     });
@@ -3618,42 +4197,218 @@ async function loadPayConfig() {
       kasirAction(act, id);
     });
 
-    // ===== Cairkan (settle BELUM_BAYAR) =====
+    // ===== Cairkan (settle BELUM_BAYAR & Split Bayar) =====
     let _settleId = null;
+    let _settleOrder = null;
+    let _settleItemsState = [];
+
+    function updateSettleCalculation() {
+      let payTotal = 0;
+      let allSelected = true;
+      let anySelected = false;
+
+      _settleItemsState.forEach((it, idx) => {
+        const row = document.querySelector(`.settle-item-row[data-idx="${idx}"]`);
+        if (!row) return;
+        const chk = row.querySelector(".settle-item-chk");
+        const qtyInp = row.querySelector(".settle-item-qty");
+        const isChecked = chk && chk.checked;
+        const raw = Number(qtyInp ? qtyInp.value : 0);
+        const validNum = isNaN(raw) || raw <= 0 ? 0 : raw;
+        const qty = isChecked && qtyInp ? Math.min(validNum, it.maxQty) : 0;
+
+        if (isChecked && qty > 0) anySelected = true;
+        if (!isChecked || qty < it.maxQty) allSelected = false;
+
+        const sub = (Number(it.harga) || 0) * qty;
+        payTotal += sub;
+        const subEl = row.querySelector(".settle-item-sub");
+        if (subEl) subEl.textContent = rupiah(sub);
+      });
+
+      const origTotal = Number(_settleOrder?.total) || 0;
+      const remainTotal = Math.max(0, origTotal - payTotal);
+
+      document.getElementById("settle-total-pay").textContent = rupiah(payTotal);
+      document.getElementById("settle-total-remain").textContent = rupiah(remainTotal);
+
+      const selAllChk = document.getElementById("settle-select-all");
+      if (selAllChk) selAllChk.checked = allSelected && _settleItemsState.length > 0;
+
+      const confirmBtn = document.getElementById("settle-confirm");
+      confirmBtn.disabled = !anySelected || payTotal <= 0;
+      if (allSelected) {
+        confirmBtn.textContent = `Lunasi Semua (${rupiah(payTotal)})`;
+        document.getElementById("settle-badge-split").style.display = "none";
+      } else {
+        confirmBtn.textContent = `Bayar Sebagian (${rupiah(payTotal)})`;
+        document.getElementById("settle-badge-split").style.display = "inline-block";
+      }
+    }
+
     function openSettleModal(id, invoice, total) {
       _settleId = id;
+      const o = kasirHistory.find(x => String(x.id) === String(id));
+      _settleOrder = o;
+
       document.getElementById("settle-invoice").textContent = invoice || id;
-      document.getElementById("settle-total").textContent = rupiah(total || 0);
-      // populate metode (exclude Belum Bayar itself)
+      document.getElementById("settle-total-orig").textContent = rupiah(total || 0);
+
+      // parse order items
+      let items = o?.items || [];
+      if (typeof items === "string") {
+        try { items = JSON.parse(items); } catch (e) { items = []; }
+      }
+      _settleItemsState = items.map((it, idx) => ({
+        index: idx,
+        nama: it.nama,
+        catatan: it.catatan || "",
+        harga: Number(it.harga) || 0,
+        maxQty: Number(it.qty) || 1,
+        qty: Number(it.qty) || 1
+      }));
+
+      // Render daftar item
+      const listContainer = document.getElementById("settle-items-list");
+      listContainer.innerHTML = "";
+      _settleItemsState.forEach((it, idx) => {
+        const row = document.createElement("div");
+        row.className = "settle-item-row";
+        row.dataset.idx = idx;
+        row.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #e8ddd1;font-size:.82rem;";
+        row.innerHTML = `
+          <label style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer;overflow:hidden;">
+            <input type="checkbox" class="settle-item-chk" checked>
+            <span style="font-weight:600;color:#2b1a12;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;">
+              ${escapeHtml(formatItemName(it.nama))}${it.catatan ? `<span style="font-size:.7rem;color:#a0815f;font-weight:normal;"> (${escapeHtml(it.catatan)})</span>` : ""}
+            </span>
+          </label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:#a0815f;font-size:.75rem;">@ ${rupiah(it.harga)}</span>
+            <input type="number" class="settle-item-qty" min="1" max="${it.maxQty}" value="${it.maxQty}" style="width:44px;padding:2px 4px;font-size:.78rem;border:1px solid #d8c7b2;border-radius:4px;text-align:center;">
+            <span class="settle-item-sub" style="font-weight:700;color:#2b7a4b;min-width:65px;text-align:right;">${rupiah(it.harga * it.maxQty)}</span>
+          </div>
+        `;
+        listContainer.appendChild(row);
+      });
+
+      // populate metode
       const sel = document.getElementById("settle-metode");
       const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
-        .filter(m => m.aktif && m.nama !== "Belum Bayar")
-        .map(m => m.nama);
+        .filter(m => m.aktif && !isBelumBayar(m))
+        .map(payLabel);
       sel.innerHTML = list.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
       if (!sel.options.length) sel.innerHTML = `<option value="Tunai">Tunai</option>`;
+
+      updateSettleCalculation();
       document.getElementById("settle-overlay").style.display = "flex";
       overlayCount++;
     }
+
+    // Event listener untuk checkbox & input qty di settle modal (change + input untuk realtime responsif)
+    const handleSettleItemInput = e => {
+      const row = e.target.closest(".settle-item-row");
+      if (!row) return;
+      const idx = Number(row.dataset.idx);
+      const chk = row.querySelector(".settle-item-chk");
+      const qtyInp = row.querySelector(".settle-item-qty");
+
+      if (e.target === chk) {
+        qtyInp.disabled = !chk.checked;
+      } else if (e.target === qtyInp) {
+        if (e.type === "change" || e.type === "blur") {
+          const raw = Number(qtyInp.value);
+          const val = Math.max(1, Math.min(isNaN(raw) ? 1 : raw, _settleItemsState[idx].maxQty));
+          qtyInp.value = val;
+        }
+      }
+      updateSettleCalculation();
+    };
+    document.getElementById("settle-items-list").addEventListener("input", handleSettleItemInput);
+    document.getElementById("settle-items-list").addEventListener("change", handleSettleItemInput);
+
+    document.getElementById("settle-select-all").addEventListener("change", e => {
+      const checked = e.target.checked;
+      document.querySelectorAll(".settle-item-row").forEach((row, idx) => {
+        const chk = row.querySelector(".settle-item-chk");
+        const qtyInp = row.querySelector(".settle-item-qty");
+        if (chk) chk.checked = checked;
+        if (qtyInp) {
+          qtyInp.disabled = !checked;
+          qtyInp.value = _settleItemsState[idx].maxQty;
+        }
+      });
+      updateSettleCalculation();
+    });
+
     document.getElementById("settle-confirm").addEventListener("click", async () => {
       if (!_settleId) return;
       const metode = document.getElementById("settle-metode").value;
       const btn = document.getElementById("settle-confirm");
+
+      // Kumpulkan item yang dipilih untuk dibayar
+      const paidItems = [];
+      _settleItemsState.forEach((it, idx) => {
+        const row = document.querySelector(`.settle-item-row[data-idx="${idx}"]`);
+        if (!row) return;
+        const chk = row.querySelector(".settle-item-chk");
+        const qtyInp = row.querySelector(".settle-item-qty");
+        if (chk && chk.checked) {
+          const qty = Math.max(1, Math.min(Number(qtyInp.value) || 1, it.maxQty));
+          paidItems.push({
+            index: idx,
+            nama: it.nama,
+            catatan: it.catatan,
+            qty
+          });
+        }
+      });
+
+      if (!paidItems.length) {
+        toast("Pilih minimal 1 item untuk dibayar", true);
+        return;
+      }
+
       btn.disabled = true;
       try {
         const res = await fetchJson(`${WORKER_URL}/api/order/${_settleId}/settle`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ metode })
+          body: JSON.stringify({
+            metode,
+            paidItems
+          })
         });
-        toast(`Invoice ${res.invoice || _settleId} dicairkan via ${metode} ✓`);
+
+        if (res.split) {
+          toast(`Split sukses! Sub-invoice ${res.paidInvoice} lunas via ${metode} (${rupiah(res.paidTotal)}), sisa tagihan: ${rupiah(res.remainingTotal)} ✓`);
+        } else {
+          toast(`Invoice ${res.invoice || _settleId} lunas dicairkan via ${metode} ✓`);
+        }
+
         closeOverlay("settle");
         // sync guest history if needed
         if (session && session.role === "GUEST") {
           const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
           const idx = local.findIndex(o => String(o.invoice || o.id) === String(_settleId));
           if (idx >= 0) {
-            local[idx].status = "SELESAI";
-            local[idx].metode = metode;
+            if (res.split) {
+              local[idx].total = res.remainingTotal;
+              if (Array.isArray(res.remainingItems)) local[idx].items = res.remainingItems;
+              // Tambahkan juga sub-order yang lunas ke riwayat guest
+              local.push({
+                invoice: res.paidInvoice,
+                id: res.paidInvoice,
+                waktu: new Date().toISOString(),
+                items: res.paidItems || paidItems,
+                total: res.paidTotal,
+                metode,
+                status: "SELESAI"
+              });
+            } else {
+              local[idx].status = "SELESAI";
+              local[idx].metode = metode;
+            }
             localStorage.setItem("cs_guest_orders", JSON.stringify(local));
           }
         }

@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DELTA Coffee</title>
   <base target="_top">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6b3f24">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DELTA Coffee">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #f5f0e8; color: #2b1a12; }
@@ -4758,6 +4766,19 @@ async function loadPayConfig() {
       if (overlayCount > 0) overlayCount--;
       if (overlayCount <= 0) { overlayCount = 0; document.body.classList.remove("modal-open"); }
     }));
+
+    // ===== PWA Service Worker (Chrome Native Install / WebAPK) =====
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(err => {
+          console.warn("SW registration failed:", err);
+        });
+      });
+    }
+
+    window.addEventListener("appinstalled", () => {
+      toast("Aplikasi DELTA Coffee berhasil terpasang di HP! ✓");
+    });
   </script>
 </body>
 </html>

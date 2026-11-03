@@ -385,6 +385,7 @@
         <div class="orders-bar">
           <h2>📜 Riwayat Pesanan</h2>
           <div class="filter">
+            <button id="merge-orders-btn" class="mini-btn" style="background:#2b7a4b;color:#fff;display:none;font-weight:600">🔀 Gabung (<span id="merge-count">0</span>) Invoice</button>
             <select id="kasir-history-filter">
               <option value="">Semua</option>
               <option value="BARU">Baru</option>
@@ -398,7 +399,7 @@
         </div>
         <div class="table-scroll">
           <table class="orders" id="kasir-history-table">
-            <thead><tr><th>Waktu</th><th>Invoice</th><th>Nama</th><th>Item</th><th>Total</th><th>Status</th><th>Metode</th><th>Aksi</th></tr></thead>
+            <thead><tr><th class="col-chk" style="width:36px;text-align:center"><input type="checkbox" id="check-all-orders" title="Pilih Semua"></th><th>Waktu</th><th>Invoice</th><th>Nama</th><th>Item</th><th>Total</th><th>Status</th><th>Metode</th><th class="col-aksi">Aksi</th></tr></thead>
             <tbody id="kasir-history-body"></tbody>
           </table>
         </div>
@@ -1306,7 +1307,13 @@
     function renderMenuEditor() {
       const body = document.getElementById("menu-body");
       body.innerHTML = "";
-      menuState.forEach(m => {
+      // sort nama A-Z; baris baru (_new) tetap di atas
+      const menuSorted = [...menuState].sort((a, b) => {
+        if (a._new) return -1;
+        if (b._new) return 1;
+        return String(a.nama || "").localeCompare(String(b.nama || ""), "id");
+      });
+      menuSorted.forEach(m => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td><input class="rec-input" data-field="nama" data-id="${m.id}" value="${escapeAttr(m.nama || "")}"></td>
@@ -2391,13 +2398,22 @@ async function loadPayConfig() {
       document.getElementById("co-modal-preview").textContent = "—";
       document.getElementById("co-error").style.display = "none";
       document.getElementById("co-bahan-list").innerHTML = "";
-      // Isi select metode dari payConfig (hanya yang aktif, kecuali Belum Bayar)
+      // Isi select metode dari payConfig (hanya yang aktif) + opsi Belum Bayar untuk kasir/admin
       const sel = document.getElementById("co-metode");
       sel.innerHTML = "";
-      payCfg
+      const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
+      const coMethods = (payCfg.length ? payCfg : PAY_DEFAULTS)
         .filter(m => m.aktif === true && !isBelumBayar(m))
-        .forEach(m => { const o = document.createElement("option"); o.value = payLabel(m); o.textContent = payLabel(m); sel.appendChild(o); });
-      if (!sel.options.length) { const o = document.createElement("option"); o.value = "Tunai"; o.textContent = "Tunai"; sel.appendChild(o); }
+        .map(payLabel);
+      if (!coMethods.length) coMethods.push("Tunai");
+      if (isStaff && !coMethods.includes("Belum Bayar")) coMethods.push("Belum Bayar");
+
+      coMethods.forEach(m => {
+        const o = document.createElement("option");
+        o.value = m;
+        o.textContent = m;
+        sel.appendChild(o);
+      });
       addCoBahanRow();
       document.getElementById("custom-order-overlay").style.display = "flex";
       document.body.classList.add("modal-open");
@@ -2890,9 +2906,9 @@ async function loadPayConfig() {
       document.getElementById("rep-margin-pct").textContent = `Margin bersih ${marginPct}%`;
 
       // Nilai stok bahan
-      document.getElementById("rep-stok-value").textContent = rupiah(totalStokValue);
+      document.getElementById("rep-stok-value").textContent = rupiah(Math.round(totalStokValue));
       document.getElementById("rep-stok-count").textContent = `${stokRows.length} bahan · stok saat ini`;
-      document.getElementById("rep-stok-total-inline").textContent = `Total ${rupiah(totalStokValue)}`;
+      document.getElementById("rep-stok-total-inline").textContent = `Total ${rupiah(Math.round(totalStokValue))}`;
       const stokBody = document.getElementById("rep-stok-body");
       stokBody.innerHTML = "";
       if (!stokRows.length) {
@@ -3791,6 +3807,7 @@ async function loadPayConfig() {
       const list = (payCfg.length ? payCfg : PAY_DEFAULTS)
         .filter(m => m.aktif && (!isBelumBayar(m) || isStaff))
         .map(payLabel);
+      if (isStaff && !list.includes("Belum Bayar")) list.push("Belum Bayar");
       if (!list.length) list.push("Tunai");
       if (!list.includes(payMetode)) payMetode = list[0];
       pmBox.innerHTML = list.map(m =>
@@ -3801,6 +3818,11 @@ async function loadPayConfig() {
     function renderPayInstr() {
       const box = document.getElementById("pay-instr");
       if (!box) return;
+      if (payMetode === "Belum Bayar") {
+        box.style.display = "block";
+        box.innerHTML = `<div style="color:#a07800;font-size:.82rem;font-weight:600">Pesanan dicatat sebagai piutang (belum bayar). Kasir dapat mencairkan pembayaran nanti.</div>`;
+        return;
+      }
       const m = (payCfg.length ? payCfg : PAY_DEFAULTS).find(x => payLabel(x) === payMetode);
       const teks = m && m.teks;
       const img = m && m.gambar;
@@ -4084,27 +4106,75 @@ async function loadPayConfig() {
       }
     }
 
+    let selectedOrderIds = new Set();
+
+    function updateMergeButtonState() {
+      const btn = document.getElementById("merge-orders-btn");
+      const countEl = document.getElementById("merge-count");
+      if (!btn || !countEl) return;
+      const count = selectedOrderIds.size;
+      countEl.textContent = count;
+      btn.style.display = count >= 2 ? "inline-block" : "none";
+
+      const chkAll = document.getElementById("check-all-orders");
+      if (chkAll) {
+        const visibleCheckboxes = Array.from(document.querySelectorAll(".order-select-chk:not(:disabled)"));
+        chkAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(c => c.checked);
+        chkAll.indeterminate = count > 0 && !chkAll.checked;
+      }
+    }
+
     function renderKasirHistory() {
       const body = document.getElementById("kasir-history-body");
       const f = document.getElementById("kasir-history-filter").value;
       const list = kasirHistory.filter(o => !f || o.status === f);
       const isAdmin = session && session.role === "ADMIN";
+      const isStaff = session && (session.role === "ADMIN" || session.role === "KASIR");
       body.innerHTML = "";
-      // toggle header kolom Aksi — cuma ADMIN lihat
-      document.querySelectorAll("#kasir-history-table th")[6].style.display = isAdmin ? "" : "none";
+
+      // toggle header kolom Checkbox dan Aksi
+      document.querySelectorAll(".col-chk").forEach(el => el.style.display = isStaff ? "" : "none");
+      document.querySelectorAll(".col-aksi").forEach(el => el.style.display = isAdmin ? "" : "none");
+
+      // Bersihkan ID terpilih yang sudah tidak ada di list aktif
+      const currentListIds = new Set(list.map(o => String(o.id)));
+      for (const id of selectedOrderIds) {
+        if (!currentListIds.has(id)) selectedOrderIds.delete(id);
+      }
+
+      const totalCols = (isStaff ? 1 : 0) + 7 + (isAdmin ? 1 : 0);
       if (!list.length) {
-        body.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" style="text-align:center;color:#a0815f;padding:14px">Belum ada pesanan.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;color:#a0815f;padding:14px">Belum ada pesanan.</td></tr>`;
+        updateMergeButtonState();
         return;
       }
+
+      // Status pesanan yang saat ini sedang aktif dipilih
+      let activeSelectedStatus = null;
+      if (selectedOrderIds.size > 0) {
+        const firstSel = kasirHistory.find(o => selectedOrderIds.has(String(o.id)));
+        if (firstSel) activeSelectedStatus = firstSel.status;
+      }
+
       list.forEach(o => {
+        const oId = String(o.id);
+        const isChecked = selectedOrderIds.has(oId);
+        const isBatal = o.status === "BATAL";
+        const isDisabled = isBatal || (activeSelectedStatus !== null && o.status !== activeSelectedStatus);
+
         const detail = o.items.map(i => {
           const main = `${escapeHtml(formatItemName(i.nama))} ×${i.qty}`;
-          const note = i.catatan ? `<br><span class="item-catatan-tag">${escapeHtml(i.catatan)}</span>` : "";
-          return `<span>${main}${note}</span>`;
-        }).join("<span style=\"color:#c2b19e\">, </span>");
+          const note = i.catatan ? `<span class="item-catatan-tag">${escapeHtml(i.catatan)}</span>` : "";
+          return `<span class="item-line">${main}${note ? " · " + note : ""}</span>`;
+        }).join("<br>");
         const metodeDisplay = escapeHtml(o.metode || "-");
         const tr = document.createElement("tr");
+        if (isChecked) tr.style.background = "#f4eee7";
+
         tr.innerHTML = `
+          <td class="col-chk" style="display:${isStaff ? "" : "none"};text-align:center">
+            <input type="checkbox" class="order-select-chk" data-id="${escapeHtml(oId)}" data-status="${escapeHtml(o.status)}" ${isChecked ? "checked" : ""} ${isDisabled ? "disabled title='Hanya dapat memilih pesanan dengan status sejenis'" : ""}>
+          </td>
           <td>${formatWaktu(o.waktu)}</td>
           <td><strong>${escapeHtml(String(o.invoice))}</strong></td>
           <td>${escapeHtml(o.username || "guest")}</td>
@@ -4112,12 +4182,14 @@ async function loadPayConfig() {
           <td><strong>${rupiah(o.total)}</strong></td>
           <td>${statusPill(o.status, o.id, o.metode)}</td>
           <td>${metodeDisplay}</td>
-          <td style="display:${isAdmin ? "" : "none"}">
+          <td class="col-aksi" style="display:${isAdmin ? "" : "none"}">
             ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${o.id}">Hapus</button>` : ""}
           </td>
         `;
         body.appendChild(tr);
       });
+
+      updateMergeButtonState();
     }
 
     async function kasirAction(act, id) {
@@ -4437,7 +4509,111 @@ async function loadPayConfig() {
       const o = kasirHistory.find(x => String(x.id) === String(id));
       openSettleModal(id, o?.invoice || id, o?.total || 0);
     });
-    document.getElementById("kasir-history-filter").addEventListener("change", renderKasirHistory);
+
+    // Checkbox perubahan pemilihan invoice di riwayat pesanan
+    document.getElementById("kasir-history-body").addEventListener("change", e => {
+      const chk = e.target.closest(".order-select-chk");
+      if (!chk) return;
+      const id = String(chk.dataset.id);
+      const st = chk.dataset.status;
+
+      if (chk.checked) {
+        if (st === "BATAL") {
+          toast("Pesanan dengan status BATAL tidak dapat digabung", true);
+          chk.checked = false;
+          return;
+        }
+        if (selectedOrderIds.size > 0) {
+          const firstSel = kasirHistory.find(o => selectedOrderIds.has(String(o.id)));
+          if (firstSel && firstSel.status !== st) {
+            toast(`Hanya dapat menggabung pesanan dengan status sejenis (${STATUS_LABEL[firstSel.status] || firstSel.status})`, true);
+            chk.checked = false;
+            return;
+          }
+        }
+        selectedOrderIds.add(id);
+      } else {
+        selectedOrderIds.delete(id);
+      }
+      renderKasirHistory();
+    });
+
+    // Pilih / batalkan semua invoice yang memenuhi kriteria status sejenis
+    document.getElementById("check-all-orders").addEventListener("change", e => {
+      const checked = e.target.checked;
+      if (!checked) {
+        selectedOrderIds.clear();
+        renderKasirHistory();
+        return;
+      }
+      const f = document.getElementById("kasir-history-filter").value;
+      const list = kasirHistory.filter(o => (!f || o.status === f) && o.status !== "BATAL");
+      if (!list.length) {
+        e.target.checked = false;
+        return;
+      }
+      const targetStatus = list[0].status;
+      list.filter(o => o.status === targetStatus).forEach(o => selectedOrderIds.add(String(o.id)));
+      renderKasirHistory();
+    });
+
+    // Tombol Gabung Invoice
+    document.getElementById("merge-orders-btn").addEventListener("click", async () => {
+      if (selectedOrderIds.size < 2) {
+        toast("Pilih minimal 2 pesanan untuk digabung", true);
+        return;
+      }
+      const ordersToMerge = kasirHistory.filter(o => selectedOrderIds.has(String(o.id)));
+      if (ordersToMerge.length < 2) {
+        toast("Pilih minimal 2 pesanan untuk digabung", true);
+        return;
+      }
+      const st = ordersToMerge[0].status;
+      if (ordersToMerge.some(o => o.status !== st)) {
+        toast("Semua pesanan yang dipilih harus memiliki status yang sama", true);
+        return;
+      }
+      if (st === "BATAL") {
+        toast("Pesanan dengan status BATAL tidak dapat digabung", true);
+        return;
+      }
+
+      const totalGabungan = ordersToMerge.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const invoiceList = ordersToMerge.map(o => o.invoice || o.id).join(", ");
+      const stLabel = STATUS_LABEL[st] || st;
+
+      const confirmMsg = `Gabung ${ordersToMerge.length} invoice menjadi 1 invoice?\n\n` +
+        `• Status: ${stLabel}\n` +
+        `• Invoice terpilih: ${invoiceList}\n` +
+        `• Total Baru: ${rupiah(totalGabungan)}\n\n` +
+        `Lanjutkan penggabungan?`;
+
+      if (!confirm(confirmMsg)) return;
+
+      const btn = document.getElementById("merge-orders-btn");
+      btn.disabled = true;
+      try {
+        const res = await fetchJson(`${WORKER_URL}/api/orders/merge`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: [...selectedOrderIds] })
+        });
+        toast(`Berhasil menggabung ${res.mergedCount || ordersToMerge.length} invoice ke ${res.invoice || res.id} ✓`);
+        selectedOrderIds.clear();
+        await loadKasirHistory();
+        if (typeof loadMenu === "function") loadMenu();
+      } catch (err) {
+        console.error(err);
+        toast("Gagal gabung invoice: " + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("kasir-history-filter").addEventListener("change", () => {
+      selectedOrderIds.clear();
+      renderKasirHistory();
+    });
     document.getElementById("kasir-history-refresh").addEventListener("click", loadKasirHistory);
 
     let kasirHistory = [];

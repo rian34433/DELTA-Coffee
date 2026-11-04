@@ -35,8 +35,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Jangan cache API calls atau non-GET
-  if (req.method !== 'GET' || url.pathname.includes('/api/')) {
+  // Jangan tangani skema non-http/https, non-GET, atau API calls
+  if (!url.protocol.startsWith('http') || req.method !== 'GET' || url.pathname.includes('/api/')) {
     return;
   }
 
@@ -56,8 +56,11 @@ self.addEventListener('fetch', (event) => {
         return caches.match(req).then((cachedRes) => {
           if (cachedRes) return cachedRes;
           if (req.headers.get('accept') && req.headers.get('accept').includes('text/html')) {
-            return caches.match('./index.html');
+            return caches.match('./index.html').then((fallback) => {
+              return fallback || new Response('Offline', { status: 503, statusText: 'Offline' });
+            });
           }
+          return new Response('', { status: 408, statusText: 'Offline' });
         });
       })
   );

@@ -1166,7 +1166,7 @@
       const num = t => parseFloat(String(t).replace(",", "."));
       const kg = s.match(/([\d.,]+)\s*kg\b/);
       const ml = s.match(/([\d.,]+)\s*ml\b/);
-      const gr = s.match(/([\d.,]+)\s*gr\b/) || s.match(/([\d.,]+)\s*g\b/);
+      const gr = s.match(/([\d.,]+)\s*(?:gram|gr|g)\b/);
       if (ml && (gr || kg)) return null;
       if (kg) {
         const qty = num(kg[1]);
@@ -4560,6 +4560,7 @@ async function loadPayConfig() {
         e.target.checked = false;
         return;
       }
+      selectedOrderIds.clear();
       const targetStatus = list[0].status;
       list.filter(o => o.status === targetStatus).forEach(o => selectedOrderIds.add(String(o.id)));
       renderKasirHistory();

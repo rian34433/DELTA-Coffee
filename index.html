@@ -119,6 +119,19 @@
     table.orders tr:hover td { background: #faf6ef; }
     table.orders .items-detail { color: #6b5b4e; font-size: .8rem; }
     .item-catatan-tag { display: inline-block; background: #fdf3e7; color: #b3641a; border: 1px solid #f2cfaf; padding: 1px 7px; border-radius: 12px; font-size: .74rem; font-weight: 500; margin-top: 3px; font-style: normal; }
+    .item-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; line-height: 1.4; flex-wrap: wrap; }
+    .item-row.is-done .item-text { color: #887869; text-decoration: line-through; }
+    .item-chk-btn {
+      width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #b8a695;
+      background: #fff; color: #fff; display: inline-flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 800; cursor: pointer; padding: 0; flex-shrink: 0;
+      transition: all .15s ease;
+    }
+    .item-chk-btn:hover { border-color: #2b7a4b; background: #f0f7f2; }
+    .item-chk-btn.done { background: #2b7a4b; border-color: #2b7a4b; color: #fff; }
+    .item-status-tag { font-size: .68rem; padding: 1px 6px; border-radius: 8px; font-weight: 600; display: inline-block; }
+    .item-status-tag.tag-ready { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+    .item-status-tag.tag-cooking { background: #fff8e1; color: #d67a00; border: 1px solid #ffe082; }
     .status-pill { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
     .st-baru { background: #fde8d7; color: #b3641a; }
     .st-diproses { background: #dceafd; color: #1a64b3; }
@@ -1114,14 +1127,14 @@
       // 1. Cek ?worker= di URL
       const urlWorker = new URLSearchParams(location.search).get("worker");
       if (urlWorker) {
-        WORKER_URL_LOCAL = urlWorker;
-        simpanWorkerURL(urlWorker);
+        WORKER_URL_LOCAL = urlWorker.trim();
+        simpanWorkerURL(WORKER_URL_LOCAL);
         return;
       }
       // 2. Cek localStorage (diseset oleh login/sesion sebelumnya)
       const ls = localStorage.getItem("cs_worker_url");
       if (ls) {
-        WORKER_URL_LOCAL = ls;
+        WORKER_URL_LOCAL = ls.trim();
         return;
       }
       // 3. Fallback ke Cloudflare (hanya untuk produksi, local test pake ?worker=)
@@ -2002,11 +2015,29 @@ async function loadPayConfig() {
           return;
         }
         const url = loginMode === "register" ? "/api/register" : "/api/login";
-        res = await fetchJson(`${WORKER_URL}${url}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
+        try {
+          res = await fetchJson(`${WORKER_URL}${url}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+          });
+        } catch (fetchErr) {
+          const msg = String(fetchErr.message || "").toLowerCase();
+          const isNetworkErr = msg.includes("failed to fetch") || msg.includes("timeout") || msg.includes("abort");
+          const defaultUrl = "https://delta-coffee.rian34433.workers.dev";
+          if (isNetworkErr && WORKER_URL !== defaultUrl) {
+            console.warn("Koneksi ke", WORKER_URL, "gagal, fallback ke Cloudflare...");
+            localStorage.removeItem("cs_worker_url");
+            WORKER_URL_LOCAL = defaultUrl;
+            res = await fetchJson(`${defaultUrl}${url}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password })
+            });
+          } else {
+            throw fetchErr;
+          }
+        }
         session = { username: res.username, role: res.role, token: res.token || "", expires: Date.now() + SESSION_TTL };
         localStorage.setItem("cs_session", JSON.stringify(session));
         applySession();
@@ -3954,6 +3985,14 @@ async function loadPayConfig() {
     }
 
     // ===== Order parsing =====
+    // Normalisasi status: Sheets bisa mengembalikan spasi/newline (\r) ikut di sel.
+    // Tanpa trim, nilai seperti " DIPROSES " tidak cocok dgn "DIPROSES" dan merusak
+    // filter/checkbox/gabung invoice. Terapkan juga untuk order guest (localStorage).
+    function normalizeStatus(st) {
+      const s = String(st == null ? "" : st).replace(/\s+/g, " ").trim().toUpperCase();
+      return s || "BARU";
+    }
+
     function parseOrders(rows) {
       // worker & mock kini return object langsung
       return (rows || []).map(o => {
@@ -3963,7 +4002,7 @@ async function loadPayConfig() {
         }
         return {
           id: o.id, invoice: o.invoice || o.id, waktu: o.waktu, items: Array.isArray(rawItems) ? rawItems : [],
-          total: Number(o.total) || 0, status: (o.status || "BARU").toUpperCase(),
+          total: Number(o.total) || 0, status: normalizeStatus(o.status),
           username: o.username || "guest", metode: o.metode || "Tunai",
           // HPP historis: dibutuhkan laporan laba, jangan buang saat parsing
           hargaModal: Number.isFinite(Number(o.hargaModal)) && o.hargaModal !== "" ? Number(o.hargaModal) : undefined,
@@ -4097,7 +4136,7 @@ async function loadPayConfig() {
         if (session && session.role === "GUEST") {
           // guest: riwayat sesi dari localStorage (GET /api/orders butuh auth)
           const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-          kasirHistory = local.map(l => ({ ...l, id: l.invoice || l.id }));
+          kasirHistory = local.map(l => ({ ...l, id: l.invoice || l.id, status: normalizeStatus(l.status) }));
           renderKasirHistory();
           return;
         }
@@ -4142,10 +4181,15 @@ async function loadPayConfig() {
 
       // toggle header kolom Checkbox dan Aksi
       document.querySelectorAll(".col-chk").forEach(el => el.style.display = isStaff ? "" : "none");
+      // Header "Pilih Semua" tampil jika ada pesanan yang bisa digabung (bukan BATAL)
+      const anySelectable = list.some(o => o.status !== "BATAL");
+      const chkAllHead = document.getElementById("check-all-orders");
+      if (chkAllHead) chkAllHead.style.display = (isStaff && anySelectable) ? "" : "none";
+      if (chkAllHead && chkAllHead.style.display === "none") chkAllHead.checked = false;
       document.querySelectorAll(".col-aksi").forEach(el => el.style.display = isAdmin ? "" : "none");
 
-      // Bersihkan ID terpilih yang sudah tidak ada di list aktif
-      const currentListIds = new Set(list.map(o => String(o.id)));
+      // Bersihkan ID terpilih yang sudah tidak ada / sudah tidak bisa digabung (BATAL)
+      const currentListIds = new Set(list.filter(o => o.status !== "BATAL").map(o => String(o.id)));
       for (const id of selectedOrderIds) {
         if (!currentListIds.has(id)) selectedOrderIds.delete(id);
       }
@@ -4170,18 +4214,44 @@ async function loadPayConfig() {
         const isBatal = o.status === "BATAL";
         const isDisabled = isBatal || (activeSelectedStatus !== null && o.status !== activeSelectedStatus);
 
-        const detail = o.items.map(i => {
+        // Samakan dengan kondisi checkbox: badge "⏳ Proses"/"✓ Siap"
+        // hanya tampil saat pesanan DIPROSES. Tombol centang tetap khusus staff.
+        const isDiproses = o.status === "DIPROSES";
+        const showItemStatus = isDiproses;
+        const canToggleItem = isStaff && isDiproses;
+
+        const detail = (o.items || []).map((i, idx) => {
+          const isDone = Boolean(i && i.done);
           const main = `${escapeHtml(formatItemName(i.nama))} ×${i.qty}`;
           const note = i.catatan ? `<span class="item-catatan-tag">${escapeHtml(i.catatan)}</span>` : "";
-          return `<span class="item-line">${main}${note ? " · " + note : ""}</span>`;
-        }).join("<br>");
+
+          if (canToggleItem) {
+            const btnClass = isDone ? "item-chk-btn done" : "item-chk-btn";
+            const btnTitle = isDone ? "Tandai proses (belum siap)" : "Tandai selesai dibuat";
+            return `<div class="item-row ${isDone ? 'is-done' : ''}">
+              <button type="button" class="${btnClass}" data-order-id="${escapeHtml(oId)}" data-item-idx="${idx}" title="${btnTitle}">${isDone ? "✓" : ""}</button>
+              <span class="item-text">${main}</span>
+              ${note ? ' <span style="color:#c2b19e">·</span> ' + note : ""}
+            </div>`;
+          } else {
+            return `<div class="item-row">
+              <span class="item-text">${main}</span>
+              ${note ? ' <span style="color:#c2b19e">·</span> ' + note : ""}
+            </div>`;
+          }
+        }).join("");
         const metodeDisplay = escapeHtml(o.metode || "-");
         const tr = document.createElement("tr");
         if (isChecked) tr.style.background = "#f4eee7";
 
+        // Checkbox gabung invoice: selalu dirender untuk staff (konsisten di semua baris).
+        // Aturan penggabungan tetap seperti sebelumnya: BATAL tidak bisa dipilih,
+        // dan hanya status sejenis yang bisa dipilih bersamaan → pakai `disabled`.
+        const showChk = isStaff;
+
         tr.innerHTML = `
           <td class="col-chk" style="display:${isStaff ? "" : "none"};text-align:center">
-            <input type="checkbox" class="order-select-chk" data-id="${escapeHtml(oId)}" data-status="${escapeHtml(o.status)}" ${isChecked ? "checked" : ""} ${isDisabled ? "disabled title='Hanya dapat memilih pesanan dengan status sejenis'" : ""}>
+            ${showChk ? `<input type="checkbox" class="order-select-chk" data-id="${escapeHtml(oId)}" data-status="${escapeHtml(o.status)}" ${isChecked ? "checked" : ""} ${isDisabled ? "disabled title='Hanya dapat memilih pesanan dengan status sejenis'" : ""}>` : ""}
           </td>
           <td>${formatWaktu(o.waktu)}</td>
           <td><strong>${escapeHtml(String(o.invoice))}</strong></td>
@@ -4268,7 +4338,42 @@ async function loadPayConfig() {
       });
     });
 
-    document.getElementById("kasir-history-body").addEventListener("click", e => {
+    document.getElementById("kasir-history-body").addEventListener("click", async e => {
+      const chk = e.target.closest(".item-chk-btn");
+      if (chk) {
+        e.stopPropagation();
+        const orderId = chk.dataset.orderId;
+        const itemIdx = Number(chk.dataset.itemIdx);
+        if (!orderId || isNaN(itemIdx)) return;
+
+        const o = kasirHistory.find(x => String(x.id) === String(orderId));
+        if (!o || !o.items || !o.items[itemIdx]) return;
+        const prevDone = Boolean(o.items[itemIdx].done);
+        o.items[itemIdx].done = !prevDone;
+        renderKasirHistory();
+
+        try {
+          const res = await fetchJson(`${WORKER_URL}/api/order/${encodeURIComponent(orderId)}/item-toggle`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ itemIndex: itemIdx, done: !prevDone })
+          });
+          if (res && res.status && res.status !== o.status) {
+            o.status = res.status;
+            toast(`Status order otomatis jadi ${STATUS_LABEL[res.status] || res.status} ✓`);
+          }
+          if (res && Array.isArray(res.items)) {
+            o.items = res.items;
+          }
+          renderKasirHistory();
+        } catch (err) {
+          o.items[itemIdx].done = prevDone;
+          renderKasirHistory();
+          toast("Gagal mengubah status item: " + err.message, true);
+        }
+        return;
+      }
+
       const btn = e.target.closest(".hist-btn");
       if (!btn) return;
       const { act, id } = btn.dataset;
@@ -4555,6 +4660,7 @@ async function loadPayConfig() {
         return;
       }
       const f = document.getElementById("kasir-history-filter").value;
+      // Aturan lama: hanya pesanan non-BATAL, dan grup status sejenis dipilih bersamaan
       const list = kasirHistory.filter(o => (!f || o.status === f) && o.status !== "BATAL");
       if (!list.length) {
         e.target.checked = false;

@@ -129,10 +129,6 @@
     }
     .item-chk-btn:hover { border-color: #2b7a4b; background: #f0f7f2; }
     .item-chk-btn.done { background: #2b7a4b; border-color: #2b7a4b; color: #fff; }
-    .item-status-tag { font-size: .68rem; padding: 1px 6px; border-radius: 8px; font-weight: 600; display: inline-block; }
-    .item-status-tag.tag-ready { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-    .item-status-tag.tag-cooking { background: #fff8e1; color: #d67a00; border: 1px solid #ffe082; }
-    .status-pill { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
     .st-baru { background: #fde8d7; color: #b3641a; }
     .st-diproses { background: #dceafd; color: #1a64b3; }
     .st-selesai { background: #d9f2e2; color: #1a7a4b; }
@@ -4194,8 +4190,8 @@ async function loadPayConfig() {
         if (!currentListIds.has(id)) selectedOrderIds.delete(id);
       }
 
-      const totalCols = (isStaff ? 1 : 0) + 7 + (isAdmin ? 1 : 0);
       if (!list.length) {
+        const totalCols = (isStaff ? 1 : 0) + 7 + (isAdmin ? 1 : 0);
         body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;color:#a0815f;padding:14px">Belum ada pesanan.</td></tr>`;
         updateMergeButtonState();
         return;
@@ -4214,11 +4210,8 @@ async function loadPayConfig() {
         const isBatal = o.status === "BATAL";
         const isDisabled = isBatal || (activeSelectedStatus !== null && o.status !== activeSelectedStatus);
 
-        // Samakan dengan kondisi checkbox: badge "⏳ Proses"/"✓ Siap"
-        // hanya tampil saat pesanan DIPROSES. Tombol centang tetap khusus staff.
-        const isDiproses = o.status === "DIPROSES";
-        const showItemStatus = isDiproses;
-        const canToggleItem = isStaff && isDiproses;
+        // Tombol centang item hanya untuk staff pada pesanan DIPROSES.
+        const canToggleItem = isStaff && o.status === "DIPROSES";
 
         const detail = (o.items || []).map((i, idx) => {
           const isDone = Boolean(i && i.done);
@@ -4244,14 +4237,9 @@ async function loadPayConfig() {
         const tr = document.createElement("tr");
         if (isChecked) tr.style.background = "#f4eee7";
 
-        // Checkbox gabung invoice: selalu dirender untuk staff (konsisten di semua baris).
-        // Aturan penggabungan tetap seperti sebelumnya: BATAL tidak bisa dipilih,
-        // dan hanya status sejenis yang bisa dipilih bersamaan → pakai `disabled`.
-        const showChk = isStaff;
-
         tr.innerHTML = `
           <td class="col-chk" style="display:${isStaff ? "" : "none"};text-align:center">
-            ${showChk ? `<input type="checkbox" class="order-select-chk" data-id="${escapeHtml(oId)}" data-status="${escapeHtml(o.status)}" ${isChecked ? "checked" : ""} ${isDisabled ? "disabled title='Hanya dapat memilih pesanan dengan status sejenis'" : ""}>` : ""}
+            ${isStaff ? `<input type="checkbox" class="order-select-chk" data-id="${escapeHtml(oId)}" data-status="${escapeHtml(o.status)}" ${isChecked ? "checked" : ""} ${isDisabled ? "disabled title='Hanya dapat memilih pesanan dengan status sejenis'" : ""}>` : ""}
           </td>
           <td>${formatWaktu(o.waktu)}</td>
           <td><strong>${escapeHtml(String(o.invoice))}</strong></td>

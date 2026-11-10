@@ -150,6 +150,15 @@
       font-size:.69rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-top:8px;
       letter-spacing:.02em;box-shadow:0 2px 8px rgba(107,63,36,.24);
     }
+    /* badge peringkat saat filter Terlaris aktif — menimpa sudut gambar */
+    .card .best-badge{
+      position:absolute;top:8px;left:8px;z-index:2;
+      display:inline-flex;align-items:center;gap:4px;
+      background:rgba(255,251,240,.95);color:#8a5a1e;
+      border:1px solid #e8cfa0;border-radius:999px;
+      font-size:.66rem;font-weight:750;padding:3px 8px;letter-spacing:.01em;
+      box-shadow:0 2px 10px rgba(80,50,20,.16);
+    }
 
     .cart{
       background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
@@ -274,6 +283,7 @@
     .bahan-menipis-chips{display:flex;flex-wrap:wrap;gap:8px}
     .chip{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:.79rem}
     .chip-habis{background:var(--red-soft);color:var(--red);border:1px solid #f0c3bf}
+    .chip-kritis{background:#fdecea;color:#c0392b;border:1px solid #f5c6c0}
     .chip-menipis{background:#fdf2df;color:var(--amber);border:1px solid #f0dcb4}
     .chip-name{font-weight:720}
     .chip-info{opacity:.88}
@@ -395,7 +405,8 @@
       position:sticky;bottom:0;
     }
     .prod-add-total{font-weight:780;font-size:1.12rem;color:var(--green);letter-spacing:-.025em;white-space:nowrap}
-    .prod-addbar .prod-add{border-radius:var(--r);flex:1}
+    .prod-addbar .prod-add{border-radius:var(--r);flex:1;width:auto}
+    .prod-addbar .modal-buy{border-radius:var(--r);flex:1;width:auto}
 
     .cart-modal-total{display:flex;justify-content:space-between;align-items:baseline;font-weight:760;font-size:1.02rem;letter-spacing:-.02em;padding:14px 18px;border-top:1px solid var(--line)}
     .cart-modal-total span:last-child{color:var(--green)}
@@ -865,6 +876,20 @@
           </div>
         </div>
 
+        <!-- Bahan Menipis Bertingkat (sumber sama dengan banner kasir) -->
+        <div style="background:#fff8ea;border:1px solid #e8cfa0;border-radius:10px;padding:14px;margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div style="font-size:.9rem;font-weight:700;color:#8a5a1e">⚠️ Bahan Menipis</div>
+            <div id="rep-menipis-legend" style="font-size:.76rem;color:#8a5a1e;font-weight:600"></div>
+          </div>
+          <div class="table-scroll">
+            <table class="orders" style="background:transparent" id="rep-menipis-table">
+              <thead><tr><th>Status</th><th>Bahan</th><th>Sisa Porsi</th><th>Stok</th><th>Kebutuhan / Porsi</th></tr></thead>
+              <tbody id="rep-menipis-body"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Aging Piutang -->
         <div style="background:#fff8d6;border:1px solid #e8c84a;border-radius:10px;padding:14px;margin-top:16px">
           <div style="font-size:.9rem;font-weight:700;color:#7a5c00;margin-bottom:8px">🕐 Aging Piutang (Belum Lunas)</div>
@@ -884,17 +909,6 @@
             </div>
           </div>
           <button id="rep-aging-toggle" style="margin-top:8px;background:none;border:1px solid #e8c84a;border-radius:6px;padding:3px 10px;font-size:.78rem;color:#7a5c00;cursor:pointer">▼ Lihat Detail</button>
-        </div>
-
-        <!-- Bahan Kritis -->
-        <div style="background:#fbe3e1;border:1px solid #e57373;border-radius:10px;padding:14px;margin-top:16px">
-          <div style="font-size:.9rem;font-weight:700;color:#b71c1c;margin-bottom:8px">⚠️ Bahan Kritis (Stok Rendah)</div>
-          <div class="table-scroll">
-            <table class="orders" style="background:transparent" id="rep-kritis-table">
-              <thead><tr><th>Bahan</th><th>Stok Saat Ini</th><th>Est. Porsi Tersisa</th><th>Status</th></tr></thead>
-              <tbody id="rep-kritis-body"></tbody>
-            </table>
-          </div>
         </div>
 
         <!-- Laporan per Kasir -->
@@ -1081,7 +1095,8 @@
     </div>
     <div class="prod-addbar">
       <div class="prod-add-total" id="prod-add-total"></div>
-      <button class="prod-add" id="prod-add">+ Keranjang</button>
+      <button class="modal-buy" id="prod-beli-langsung" style="flex:1;min-width:150px;white-space:nowrap">Beli Langsung</button>
+      <button class="prod-add" id="prod-add" style="flex:0 0 auto;padding:14px 18px">+ Keranjang</button>
     </div>
   </div>
 
@@ -1189,7 +1204,10 @@
         <input class="rec-input" id="co-catatan" placeholder="cth: less sugar, no ice, extra shot…" style="width:100%;box-sizing:border-box">
 
         <div id="co-error" style="color:#c0392b;font-size:.82rem;margin-top:8px;display:none"></div>
-        <button id="co-submit" class="modal-buy" style="margin-top:16px">Buat Pesanan</button>
+        <div class="prod-addbar" style="margin-top:16px;align-items:stretch">
+          <button id="co-submit" class="modal-buy" style="flex:1;width:auto">Beli Langsung</button>
+          <button id="co-add-cart" class="prod-add" style="flex:1;width:auto">+ Keranjang</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2906,7 +2924,37 @@ async function loadPayConfig() {
       }
     });
 
-    // ===== Pengeluaran / Kas Keluar =====
+    document.getElementById("co-add-cart").addEventListener("click", () => {
+      const nama = document.getElementById("co-nama").value.trim();
+      const hargaJual = Number(document.getElementById("co-harga-jual").value);
+      const catatan = document.getElementById("co-catatan").value.trim();
+      const bahans = getCoBahans();
+      const errEl = document.getElementById("co-error");
+      errEl.style.display = "none";
+
+      if (!nama) { errEl.textContent = "Nama pesanan wajib diisi"; errEl.style.display = ""; return; }
+      if (!bahans.length) { errEl.textContent = "Tambah minimal 1 bahan"; errEl.style.display = ""; return; }
+      if (!(hargaJual > 0)) { errEl.textContent = "Harga jual wajib diisi (> 0)"; errEl.style.display = ""; return; }
+
+      const cartKey = makeCartKey("custom|" + nama);
+      cart[cartKey] = {
+        item: {
+          nama: "custom|" + nama,
+          _baseNama: nama,
+          _size: "",
+          harga: hargaJual,
+          _bahans: bahans,
+          isCustomOrder: true
+        },
+        qty: 1,
+        catatan
+      };
+      renderCart();
+      updateFloatCart();
+      flyToCart();
+      closeOverlay("custom-order");
+      showCartNotif(`${nama} ×1 masuk keranjang`);
+    });
     let expenseList = [];
 
     function openExpenseModal() {
@@ -3045,23 +3093,31 @@ async function loadPayConfig() {
     // ===== Laporan & Analytics (Dashboard) =====
     let reportOrders = [];
     let reportExpenses = [];
+    let reportMenipis = [];   // bahan menipis bertingkat — sumber sama dengan banner kasir
 
     let reportOpname = [];
     let reportBahan = [];   // snapshot stok bahan (bukan per periode)
     async function loadReport() {
       try {
-        const [ordData, expData, opnData, bahanData] = await Promise.all([
+        const [ordData, expData, opnData, bahanData, menipisData] = await Promise.all([
           fetchJson(`${WORKER_URL}/api/orders`),
           fetchJson(`${WORKER_URL}/api/pengeluaran`).catch(() => []),
           fetchJson(`${WORKER_URL}/api/bahan/opname`).catch(() => []),
-          fetchJson(`${WORKER_URL}/api/bahan/list`).catch(() => [])
+          fetchJson(`${WORKER_URL}/api/bahan/list`).catch(() => []),
+          fetchJson(`${WORKER_URL}/api/bahan/menipis`).catch(() => null)
         ]);
         reportOrders = parseOrders(ordData);
         reportExpenses = expData || [];
         reportOpname = opnData || [];
         reportBahan = Array.isArray(bahanData) ? bahanData : [];
+        // sumber sama dengan banner kasir; fallback ke data menu kalau endpoint belum ada
+        if (Array.isArray(menipisData)) reportMenipis = menipisData;
         if (!menu || !menu.length) {
           await loadMenu();
+        }
+        if (!Array.isArray(menipisData)) {
+          // /api/menu memuat bahanMenipis — pakai itu sebagai fallback
+          reportMenipis = lastMenipis || [];
         }
         renderReport();
       } catch (e) {
@@ -3275,6 +3331,43 @@ async function loadPayConfig() {
       });
     }
 
+    // Bahan menipis bertingkat di laporan — format & ambang sama persis dengan banner kasir.
+    function renderRepBahanMenipis(list) {
+      const body = document.getElementById("rep-menipis-body");
+      const legendEl = document.getElementById("rep-menipis-legend");
+      if (!body) return;
+      body.innerHTML = "";
+      const rows = sortMenipis(Array.isArray(list) ? list : []);
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#a0815f;padding:10px">Semua bahan aman.</td></tr>`;
+        if (legendEl) legendEl.textContent = "Tidak ada bahan di bawah ambang";
+        return;
+      }
+      const countBy = { habis: 0, kritis: 0, menipis: 0 };
+      rows.forEach(x => { const m = menipisText(x); countBy[m.level] = (countBy[m.level] || 0) + 1; });
+      if (legendEl) {
+        legendEl.textContent = [
+          countBy.habis ? `⛔ ${countBy.habis} habis` : "",
+          countBy.kritis ? `🔴 ${countBy.kritis} kritis (≤5 porsi)` : "",
+          countBy.menipis ? `🟠 ${countBy.menipis} menipis (≤10 porsi)` : ""
+        ].filter(Boolean).join(" · ");
+      }
+      rows.forEach(x => {
+        const m = menipisText(x);
+        const bg = m.level === "habis" ? "#fce8e6" : m.level === "kritis" ? "#fdecea" : "#fef7e0";
+        const perPorsi = Number(x.perPorsi) || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="badge" style="background:${bg};color:${m.tone};font-weight:700">${m.icon} ${escapeHtml(m.label)}</span></td>
+          <td><strong>${escapeHtml(x.bahan)}</strong></td>
+          <td style="color:${m.tone};font-weight:700">${m.level === "habis" ? "0" : m.porsi} porsi</td>
+          <td>${m.stok.toLocaleString("id-ID")}</td>
+          <td style="color:#a0815f">${perPorsi ? perPorsi.toLocaleString("id-ID") : "—"}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
     // Section 2 — chart batang trend penjualan harian.
     function renderTrendChart(paidOrders, period, startDate, endDate) {
       const chartBox = document.getElementById("rep-chart-container");
@@ -3477,60 +3570,6 @@ async function loadPayConfig() {
       }
     }
 
-    // Section 7 — bahan kritis (stok ≤ 5 atau estimasi ≤ 3 hari).
-    function renderKritisTable(paidOrders) {
-      const body = document.getElementById("rep-kritis-body");
-      body.innerHTML = "";
-      if (!reportBahan || !reportBahan.length) {
-        body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#a0815f;padding:10px">Data bahan tidak tersedia.</td></tr>`;
-        return;
-      }
-      // Hitung usage per bahan dari resep & paid orders
-      const bahanUsage = {};
-      const resepSrc = (typeof recipeState !== "undefined" && recipeState && Array.isArray(recipeState.resep))
-        ? recipeState.resep : [];
-      paidOrders.forEach(o => {
-        (o.items || []).forEach(it => {
-          const baseNama = String(it.nama || "").split("|")[0].trim();
-          const qty = Number(it.qty) || 1;
-          resepSrc
-            .filter(r => r.nama === it.nama || r.nama === baseNama)
-            .forEach(k => {
-              bahanUsage[k.bahan] = (bahanUsage[k.bahan] || 0) + (Number(k.jumlah) || 0) * qty;
-            });
-        });
-      });
-
-      const sortedBahan = [...reportBahan].sort((a, b) => (Number(a.stok)||0) - (Number(b.stok)||0));
-      // Hoist unique-day count: compute once, not per-bahan (was O(bahan × orders))
-      const uniqueDays = paidOrders.length > 0
-        ? Math.max(1, new Set(paidOrders.map(o => wibDate(o.waktu))).size)
-        : 1;
-      let kritisCount = 0;
-      sortedBahan.forEach(b => {
-        const stok = Number(b.stok) || 0;
-        const dailyUse = (bahanUsage[b.nama] || 0) / uniqueDays;
-        const daysLeft = dailyUse > 0 ? Math.floor(stok / dailyUse) : null;
-        const isKritis = stok <= 5 || (daysLeft !== null && daysLeft <= 3);
-        if (!isKritis) return;
-        kritisCount++;
-        const statusColor = stok === 0 ? "#b3261e" : daysLeft !== null && daysLeft <= 1 ? "#b3641a" : "#a07800";
-        const statusLabel = stok === 0 ? "🔴 HABIS" : daysLeft !== null && daysLeft <= 1 ? "🟠 Kritis" : "🟡 Rendah";
-        const estPorsi = daysLeft !== null ? `~${daysLeft} hari` : `${stok} unit`;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong>${escapeHtml(b.nama)}</strong></td>
-          <td style="font-weight:700;color:${statusColor}">${(stok).toLocaleString("id-ID")} ${escapeHtml(b.satuan||"")}</td>
-          <td style="color:#6b3f24">${estPorsi}</td>
-          <td><span class="badge" style="background:${stok===0?"#fbe3e1":daysLeft!==null&&daysLeft<=1?"#ffe0b2":"#fff8d6"};color:${statusColor}">${statusLabel}</span></td>
-        `;
-        body.appendChild(tr);
-      });
-      if (!kritisCount) {
-        body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#137333;padding:10px">✅ Semua bahan dalam kondisi aman.</td></tr>`;
-      }
-    }
-
     // Section 8 — laporan per kasir.
     function renderKasirTable(paidOrders) {
       const kasirMap = {};
@@ -3636,11 +3675,11 @@ async function loadPayConfig() {
 
       const m = computeReportMetrics(period, startDate, endDate);
       renderKpiCards(m);
+      renderRepBahanMenipis(reportMenipis);
       renderTrendChart(m.paidOrders, period, startDate, endDate);
       renderPayTable(buildPayMap(m.paidOrders), m.totalOmset);
       renderTopTable(computeTopItems(m.paidOrders), computeMarginByMenu(m.paidOrders));
       renderAgingTable(m.piutangOrders);
-      renderKritisTable(m.paidOrders);
       renderKasirTable(m.paidOrders);
       renderBatalTable(period, startDate, endDate);
       renderHeatmap(m.paidOrders);
@@ -3740,6 +3779,43 @@ async function loadPayConfig() {
 
     // ===== Banner bahan menipis =====
     let menipisVisible = false;   // default hide
+
+    // Metadata tiap tingkat peringatan. Urutan dipakai untuk pengurutan & badge.
+    //   porsi ≤10 → menipis (peringatan 1)
+    //   porsi ≤5  → kritis  (peringatan 2)
+    //   porsi ≤0  → habis   (peringatan 3)
+    const MENIPIS_LEVELS = {
+      habis:   { rank: 0, icon: "⛔", label: "Habis",    cls: "chip-habis",   tone: "#b3261e" },
+      kritis:  { rank: 1, icon: "🔴", label: "Kritis",   cls: "chip-kritis",  tone: "#c0392b" },
+      menipis: { rank: 2, icon: "🟠", label: "Menipis",  cls: "chip-menipis", tone: "#b3641a" }
+    };
+    // Normalisasi entri server (mendukung payload lama tanpa `level`).
+    function menipisLevelMeta(x) {
+      let level = x && x.level;
+      if (!MENIPIS_LEVELS[level]) {
+        // fallback payload lama: {stok, ambang, menipis}
+        const stok = Number(x && x.stok) || 0;
+        const ambang = Number(x && x.ambang) || 0;
+        const porsi = ambang > 0 ? Math.max(0, Math.floor((stok / ambang) * 10)) : (stok <= 0 ? 0 : 11);
+        level = porsi <= 0 ? "habis" : porsi <= 5 ? "kritis" : porsi <= 10 ? "menipis" : "aman";
+      }
+      const meta = MENIPIS_LEVELS[level];
+      if (!meta) return null;
+      return { level, ...meta, porsi: Number(x.porsi) || 0, stok: Number(x.stok) || 0 };
+    }
+    function menipisText(x) {
+      const m = menipisLevelMeta(x);
+      if (!m) return { ...MENIPIS_LEVELS.menipis, porsi: 0, stok: 0, level: "menipis" };
+      return m;
+    }
+    // Urutkan: paling parah dulu, lalu porsi terkecil.
+    function sortMenipis(list) {
+      return (list || []).slice().sort((a, b) => {
+        const ma = menipisText(a), mb = menipisText(b);
+        return (ma.rank - mb.rank) || (ma.porsi - mb.porsi) || String(a.bahan).localeCompare(String(b.bahan), "id");
+      });
+    }
+
     function updateMenipisBadge(n) {
       const toggle = document.getElementById("menipis-toggle");
       const badge = document.getElementById("menipis-badge");
@@ -3757,25 +3833,32 @@ async function loadPayConfig() {
     function renderBahanMenipis(list) {
       const box = document.getElementById("bahan-menipis");
       if (!box) return;
-      lastMenipis = list || [];
+      lastMenipis = Array.isArray(list) ? list : [];
       // role-gated: ADMIN/KASIR saja yang lihat notif stok
       if (!session || (session.role !== "ADMIN" && session.role !== "KASIR")) {
         box.style.display = "none"; return;
       }
-      if (!list || !list.length) { box.style.display = "none"; updateMenipisBadge(0); return; }
-      updateMenipisBadge(list.length);
+      if (!lastMenipis.length) { box.style.display = "none"; updateMenipisBadge(0); return; }
+      updateMenipisBadge(lastMenipis.length);
       if (!menipisVisible) { box.style.display = "none"; return; }   // default hide
-      const chips = list.map(x => {
-        const habis = x.stok <= 0;
-        const cls = habis ? "chip-habis" : "chip-menipis";
-        const label = habis ? "Habis" : `Sisa ${x.stok}`;
-        return `<div class="chip ${cls}">
-          <span class="chip-name">${escapeHtml(x.bahan)}</span>
-          <span class="chip-info">${label}</span>
+      const sorted = sortMenipis(lastMenipis);
+      const countBy = { habis: 0, kritis: 0, menipis: 0 };
+      sorted.forEach(x => { const m = menipisText(x); countBy[m.level] = (countBy[m.level] || 0) + 1; });
+      const chips = sorted.map(x => {
+        const m = menipisText(x);
+        const info = m.level === "habis" ? "Habis" : `Sisa ${m.porsi} porsi`;
+        return `<div class="chip ${m.cls}" style="--chip-tone:${m.tone}">
+          <span class="chip-name">${m.icon} ${escapeHtml(x.bahan)}</span>
+          <span class="chip-info">${escapeHtml(info)}</span>
           <button class="chip-restock" data-bahan="${escapeAttr(x.bahan)}">Restock</button>
         </div>`;
       }).join("");
-      box.innerHTML = `<div class="bahan-menipis-title">⚠️ Bahan Menipis</div><div class="bahan-menipis-chips">${chips}</div>`;
+      const legend = [
+        countBy.habis ? `⛔ ${countBy.habis} habis` : "",
+        countBy.kritis ? `🔴 ${countBy.kritis} kritis (≤5 porsi)` : "",
+        countBy.menipis ? `🟠 ${countBy.menipis} menipis (≤10 porsi)` : ""
+      ].filter(Boolean).join(" · ");
+      box.innerHTML = `<div class="bahan-menipis-title">⚠️ Bahan Menipis <span style="font-weight:400;opacity:.8;font-size:.78rem">${escapeHtml(legend)}</span></div><div class="bahan-menipis-chips">${chips}</div>`;
       box.style.display = "block";
     }
 
@@ -3830,19 +3913,50 @@ async function loadPayConfig() {
     function populateCats() {
       const box = document.getElementById("kasir-cats");
       const cats = [...new Set(menu.map(m => m.kategori).filter(Boolean))];
-      const btns = [{ v: "all", t: "Semua" }, ...cats.map(c => ({ v: c, t: c }))];
+      const btns = [
+        { v: "all", t: "Semua" },
+        { v: "bestseller", t: "🏆 Terlaris" },
+        ...cats.map(c => ({ v: c, t: c }))
+      ];
       box.innerHTML = btns.map(b =>
         `<button data-cat="${escapeAttr(b.v)}" class="${catFilter === b.v ? "active" : ""}">${escapeHtml(b.t)}</button>`
       ).join("");
     }
 
+    // Menu terlaris = agregasi qty per BASE menu dari riwayat order kasir.
+    // Sumber sama dengan laporan (order lunas & tidak batal), dikelompokkan per
+    // base name supaya tiap ukuran (S/M/L) tidak dihitung sebagai menu berbeda.
+    // Custom order tidak punya kartu menu — dilewati.
+    function bestsellerRanks() {
+      const tally = {};
+      (kasirHistory || []).forEach(o => {
+        if (!o || o.status === "BATAL" || isUnpaidOrder(o)) return;
+        (o.items || []).forEach(it => {
+          if (!it || !it.nama || it._custom) return;
+          const base = String(it.nama).split("|")[0].trim();
+          if (!base) return;
+          const qty = it.qty != null && Number(it.qty) > 0 ? Number(it.qty) : 1;
+          tally[base] = (tally[base] || 0) + qty;
+        });
+      });
+      const ranked = Object.entries(tally)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "id"))
+        .slice(0, 10);
+      const ranks = new Map();
+      ranked.forEach(([nama, qty], i) => ranks.set(nama, { qty, rank: i }));
+      return ranks;
+    }
+
     function filteredMenu() {
       const q = qFilter.toLowerCase();
-      return menu.filter(m =>
-        (catFilter === "all" || m.kategori === catFilter) &&
-        (!q || (m.nama || "").toLowerCase().includes(q) ||
-          (m.deskripsi || "").toLowerCase().includes(q))
-      );
+      const best = catFilter === "bestseller" ? bestsellerRanks() : null;
+      return menu.filter(m => {
+        const base = String(m.nama || "").split("|")[0].trim();
+        const catOk = catFilter === "all"
+          || (catFilter === "bestseller" ? best.has(base) : m.kategori === catFilter);
+        return catOk && (!q || (m.nama || "").toLowerCase().includes(q) ||
+          (m.deskripsi || "").toLowerCase().includes(q));
+      });
     }
 
     // parse grouped menu: "Base Name|Size" → group by base name
@@ -3874,13 +3988,20 @@ async function loadPayConfig() {
       Object.values(groups).forEach(g => {
         g.variants.sort((a, b) => (sizeOrder[a.size] ?? 99) - (sizeOrder[b.size] ?? 99));
       });
-      return Object.values(groups);
+      const out = Object.values(groups);
+      // mode Terlaris: urutkan kartu sesuai peringkat penjualan, bukan urutan menu
+      if (catFilter === "bestseller") {
+        const ranks = bestsellerRanks();
+        out.sort((a, b) => (ranks.get(a.baseNama)?.rank ?? 99) - (ranks.get(b.baseNama)?.rank ?? 99));
+      }
+      return out;
     }
 
     function renderMenu() {
       const box = document.getElementById("menu");
       box.innerHTML = "";
       const grouped = getGroupedMenu();
+      const bestRank = catFilter === "bestseller" ? bestsellerRanks() : null;
       grouped.forEach((group, i) => {
         const div = document.createElement("div");
         // Coming Soon hanya kalau SEMUA varian coming — kalau satu varian sudah
@@ -3901,8 +4022,10 @@ async function loadPayConfig() {
         div.className = "card" + (coming ? " coming-soon-card" : (allOut ? " soldout" : ""));
         div.style.animationDelay = Math.min(i * 0.035, 0.6) + "s";
         const sizes = group.variants.map(v => v.size).filter(Boolean).join(" / ");
+        const bestInfo = bestRank ? bestRank.get(group.baseNama) : null;
         div.innerHTML = `
           ${group.gambar ? `<div class="card-img"><img src="${escapeAttr(group.gambar)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=noimg>☕</div>'"></div>` : `<div class="card-img"><div class="noimg">☕</div></div>`}
+          ${bestInfo ? `<span class="best-badge">🏆 #${bestInfo.rank + 1} · ${bestInfo.qty} terjual</span>` : ""}
           <span class="cat">${escapeHtml(group.kategori || "")}</span>
           <h3>${escapeHtml(group.baseNama)}</h3>
           ${sizes ? `<div class="desc">Ukuran: ${escapeHtml(sizes)}</div>` : ""}
@@ -4043,7 +4166,33 @@ async function loadPayConfig() {
       return `${baseKey}#${Date.now().toString(36)}${cartLineSeq}`;
     }
 
+    // Tombol "Beli Langsung" — pakai logika "+ Keranjang" yang sama,
+    // lalu langsung buka modal pembayaran.
+    document.getElementById("prod-beli-langsung").addEventListener("click", () => {
+      if (!prodItem) return;
+      const catatan = document.getElementById("prod-catatan").value.trim();
+      const baseKey = prodItem.baseNama + (prodSize ? "|" + prodSize : "");
+      const directItems = [{
+        item: {
+          ...prodItem,
+          nama: baseKey,
+          _baseNama: prodItem.baseNama,
+          _size: prodSize,
+          harga: prodItem.variants.find(v => v.size === prodSize)?.harga || 0,
+          deskripsi: prodItem.variants.find(v => v.size === prodSize)?.deskripsi || ""
+        },
+        qty: prodQty,
+        catatan
+      }];
+      closeOverlay("prod");
+      openPayModal(directItems);
+    });
+
     document.getElementById("prod-add").addEventListener("click", () => {
+      prodAddToCart();
+    });
+
+    function prodAddToCart(opts = {}) {
       if (!prodItem) return;
       const catatan = document.getElementById("prod-catatan").value.trim();
       // item.nama tetap baseNama|size — dipakai worker untuk lookup resep & harga.
@@ -4067,7 +4216,7 @@ async function loadPayConfig() {
       flyToCart();
       closeOverlay("prod");
       showCartNotif(`${prodItem.baseNama}${prodSize ? " " + prodSize : ""} ×${prodQty} masuk keranjang`);
-    });
+    }
 
     // notif "masuk keranjang" — muncul dari sisi FAB
     function showCartNotif(msg) {
@@ -4207,13 +4356,18 @@ async function loadPayConfig() {
 
     // ===== Modal checkout / pembayaran =====
     let payMetode = "Tunai";
-    function openPayModal() {
+    // directItems: array {item,qty,catatan} untuk "Beli Langsung" — tidak menyentuh cart utama.
+    // Kalau null/undefined, pakai cart global seperti biasa.
+    let _payDirectItems = null;
+    function openPayModal(directItems) {
+      _payDirectItems = directItems || null;
       payMetode = "Tunai";
-      const names = Object.keys(cart);
+      const entries = _payDirectItems
+        ? _payDirectItems
+        : Object.values(cart);
       let sumHtml = "";
       let total = 0;
-      names.forEach(nama => {
-        const { item, qty, catatan } = cart[nama];
+      entries.forEach(({ item, qty, catatan }) => {
         total += Number(item.harga) * qty;
         sumHtml += `<div>${escapeHtml(formatItemName(item.nama))} ×${qty} — ${rupiah(Number(item.harga) * qty)}${catatan ? `<br><span style="font-size:.75rem;color:#a0815f;font-style:italic">${escapeHtml(catatan)}</span>` : ""}</div>`;
       });
@@ -4264,29 +4418,69 @@ async function loadPayConfig() {
         (img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(payMetode)}">` : "");
     }
     document.getElementById("pay-confirm").addEventListener("click", async () => {
-      if (!cartCount()) return;
-      const items = Object.values(cart).map(({ item, qty, catatan }) => ({ nama: item.nama, qty, harga: Number(item.harga), catatan: catatan || "" }));
-      const total = items.reduce((s, i) => s + i.harga * i.qty, 0);
+      const isDirectPay = !!_payDirectItems;
+      const entries = isDirectPay ? _payDirectItems : Object.values(cart);
+      if (!isDirectPay && !cartCount()) return;
       const btn = document.getElementById("pay-confirm");
       btn.disabled = true;
+      const invoices = [];
+      const username = session ? session.username : "guest";
       try {
-        // semua role (termasuk guest) kirim ke worker → kasir bisa lihat & konfirmasi
-        const data = await fetchJson(`${WORKER_URL}/api/order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, total, metode: payMetode, username: session ? session.username : "guest" })
-        });
-        // guest: catat juga di localStorage — riwayat sesi sampai logout
-        if (session && session.role === "GUEST") {
-          const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-          guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || "BARU" });
-          localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+        // Item custom order punya bahan sendiri → endpoint khusus, bukan /api/order
+        const customEntries = entries.filter(({ item }) => item.isCustomOrder);
+        const normalEntries = entries.filter(({ item }) => !item.isCustomOrder);
+
+        if (normalEntries.length) {
+          const items = normalEntries.map(({ item, qty, catatan }) => ({ nama: item.nama, qty, harga: Number(item.harga), catatan: catatan || "" }));
+          const total = items.reduce((s, i) => s + i.harga * i.qty, 0);
+          // semua role (termasuk guest) kirim ke worker → kasir bisa lihat & konfirmasi
+          const data = await fetchJson(`${WORKER_URL}/api/order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items, total, metode: payMetode, username })
+          });
+          invoices.push(data.invoice || data.id);
+          // guest: catat juga di localStorage — riwayat sesi sampai logout
+          if (session && session.role === "GUEST") {
+            const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+            guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || "BARU" });
+            localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+          }
         }
-        toast(`Invoice ${data.invoice || data.id} — ${payMetode} ✓`);
-        Object.keys(cart).forEach(k => delete cart[k]);
-        renderCart();
-        renderCartModal();
-        updateFloatCart();
+
+        for (const { item, qty, catatan } of customEntries) {
+          for (let n = 0; n < qty; n++) {
+            const data = await fetchJson(`${WORKER_URL}/api/custom-order`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nama: item._baseNama || item.nama,
+                bahan: item._bahans || [],
+                hargaJual: Number(item.harga),
+                metode: payMetode,
+                catatan: catatan || "",
+                username
+              })
+            });
+            invoices.push(data.invoice || data.id);
+            if (session && session.role === "GUEST") {
+              const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+              const namaItem = item._baseNama || item.nama;
+              guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items: [{ nama: namaItem, qty: 1, harga: Number(item.harga), catatan: catatan || "" }], total: Number(item.harga), metode: payMetode, status: "BARU" });
+              localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+            }
+          }
+        }
+
+        toast(`Invoice ${invoices.join(", ")} — ${payMetode} ✓`);
+        // Beli Langsung: cart utama tidak disentuh
+        if (!isDirectPay) {
+          Object.keys(cart).forEach(k => delete cart[k]);
+          renderCart();
+          renderCartModal();
+          updateFloatCart();
+        }
+        _payDirectItems = null;
         closeOverlay("pay");
         loadMenu();
         loadKasirHistory();
@@ -4546,6 +4740,8 @@ async function loadPayConfig() {
     function formatItemName(s) {
       const parts = String(s ?? "").split("|").map(p => p.trim()).filter(Boolean);
       if (parts.length <= 1) return parts[0] || "";
+      // "custom|Nama" = penanda pesanan custom di keranjang, bukan nama menu — jangan tampilkan prefix-nya
+      if (parts[0].toLowerCase() === "custom") return parts.slice(1).join(" ");
       const base = parts[0];
       const details = parts.slice(1).join(", ");
       return `${base} (${details})`;
@@ -4580,6 +4776,7 @@ async function loadPayConfig() {
           const local = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
           kasirHistory = local.map(l => ({ ...l, id: l.invoice || l.id, status: normalizeStatus(l.status) }));
           renderKasirHistory();
+          if (catFilter === "bestseller") renderMenu();
           return;
         }
         const rows = await fetchJson(`${WORKER_URL}/api/orders`);
@@ -4590,6 +4787,8 @@ async function loadPayConfig() {
         }
         kasirHistory = all;
         renderKasirHistory();
+        // filter Terlaris bergantung pada riwayat → segarkan kartu begitu data tiba
+        if (catFilter === "bestseller") renderMenu();
       } catch (e) {
         console.error(e);
       }

@@ -13,7 +13,31 @@
   <meta name="apple-mobile-web-app-title" content="DELTA Coffee">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
+  <script>
+  // Pre-paint CSS: set tab aktif dari localStorage BEFORE paint, sehingga tidak ada
+  // kedipan "MENU" → tab tujuan saat refresh. CSS di bawah membaca data-initial-tab.
+  (function () {
+    var saved = "kasir";
+    try { var s = localStorage.getItem("cs_tab"); if (s) saved = s; } catch (e) {}
+    var role = null;
+    try { var ss = JSON.parse(localStorage.getItem("cs_session") || "null"); if (ss && ss.role) role = ss.role; } catch (e) {}
+    var isStaff = role === "ADMIN" || role === "KASIR";
+    var isAdmin = role === "ADMIN";
+    if (!isStaff && (saved === "history" || saved === "expense" || saved === "report" || saved === "admin")) saved = "kasir";
+    if (!isAdmin && saved === "admin") saved = "kasir";
+    document.documentElement.setAttribute("data-initial-tab", saved);
+  })();
+  </script>
   <style>
+    /* Pre-paint CSS untuk tab aktif — sebelum JS menjalankan switchTab() */
+    html[data-initial-tab="history"] #view-kasir, html[data-initial-tab="expense"] #view-kasir,
+    html[data-initial-tab="report"] #view-kasir, html[data-initial-tab="admin"] #view-kasir { display:none }
+    html[data-initial-tab="history"] #view-history { display:block }
+    html[data-initial-tab="history"] #tab-kasir { background:transparent !important;color:var(--ink-2) !important;border-color:transparent !important;box-shadow:none !important }
+    html[data-initial-tab="history"] #tab-history { background:var(--brand) !important;color:#fff !important;border-color:var(--brand) !important;box-shadow:0 4px 14px rgba(107,63,36,.26) !important }
+    html[data-initial-tab="expense"] #view-expense { display:block }
+    html[data-initial-tab="report"] #view-report { display:block }
+    html[data-initial-tab="admin"] #view-admin { display:block }
     /* ===== DELTA Coffee — Modern Minimal (warm glass) ===== */
     :root{
       --bg:#f7f3ec; --surface:#fff; --surface-soft:#faf7f2;
@@ -47,15 +71,32 @@
     .app{max-width:1200px;margin:0 auto;padding:18px 20px 96px}
     header{
       position:sticky;top:0;z-index:50;
-      display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;
-      margin:-18px -20px 18px;padding:14px 20px 12px;
+      display:flex;flex-direction:column;align-items:center;
+      margin:-18px -20px 18px;padding:10px 20px 12px;
       background:linear-gradient(to bottom,rgba(251,248,243,.92),rgba(251,248,243,.7));
       -webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);
       border-bottom:1px solid rgba(221,205,185,.55);
     }
     header h1{font-size:clamp(1.15rem,1rem + .7vw,1.5rem);font-weight:760;letter-spacing:-.022em;line-height:1.1}
+    /* Baris kedua: menu kiri, auth kanan */
+    .header-row{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;gap:8px}
+    /* tombol Log In pojok kanan header hanya saat belum login — desain di dalam .header-row */
+    #header-login{
+      padding:8px 16px;border:1px solid var(--line-strong);border-radius:999px;
+      background:var(--brand);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;
+      cursor:pointer;box-shadow:0 2px 8px rgba(107,63,36,.2);
+      transition:filter var(--dur),transform var(--dur) var(--ease);
+    }
+    #header-login:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    #header-login:active{transform:scale(.97)}
+    @media (max-width:860px){
+      #header-login{padding:6px 12px;font-size:.76rem}
+      .nav button{padding:6px 10px;font-size:.74rem}
+      .user-chip{padding:6px 10px;font-size:.72rem}
+      header{padding:10px 12px 10px}
+    }
 
-    .nav{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap}
+    .nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .nav button,.subnav button{
       padding:8px 18px;border:1px solid transparent;border-radius:999px;
       background:transparent;color:var(--ink-2);
@@ -278,6 +319,16 @@
     @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.96)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
     #toast.error{background:var(--red)}
 
+    /* notifikasi tengah atas — dipakai untuk peringatan "Login Terlebih Dahulu" */
+    #toast-top{
+      position:fixed;top:18px;left:50%;transform:translateX(-50%);
+      background:var(--amber);color:#fff;padding:12px 22px;border-radius:var(--r);
+      font-size:.87rem;font-weight:650;display:none;z-index:500;
+      box-shadow:var(--sh-3);animation:toastTopIn .3s var(--bounce);
+      max-width:min(92vw,460px);text-align:center;
+    }
+    @keyframes toastTopIn{from{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.96)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+
     .bahan-menipis{background:var(--amber-soft);color:var(--amber);border:1px solid #f0dcb4;border-radius:var(--r);padding:11px 14px;margin-bottom:14px;font-size:.86rem;animation:viewIn .35s var(--ease) both}
     .bahan-menipis-title{font-weight:720;margin-bottom:8px;font-size:.88rem}
     .bahan-menipis-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -470,9 +521,8 @@
     .login-tabs button:hover{background:rgba(107,63,36,.07);color:var(--brand);transform:none;box-shadow:none}
     .login-tabs button.active{background:var(--surface);color:var(--brand);box-shadow:var(--sh-1)}
     .login-err{color:var(--red);font-size:.8rem;margin-top:10px;min-height:18px}
-    .login-hint{color:var(--muted);font-size:.71rem;margin-top:12px}
 
-    .user-menu{margin-left:auto;position:relative;align-self:center}
+    .user-menu{position:relative}
     .user-chip{
       padding:7px 15px;background:var(--brand);color:#fff;border-radius:999px;
       font-size:.77rem;font-weight:650;cursor:pointer;display:inline-block;
@@ -655,12 +705,17 @@
 <body>
   <div class="app">
     <header>
+      <!-- Baris 1: judul di tengah -->
       <h1>☕ DELTA Coffee</h1>
       <p id="status" style="display:none"></p>
-      <nav class="nav">
-        <button id="tab-kasir" class="active">MENU</button>
-        <button id="tab-history">🕘 Riwayat Pesanan</button>
-        <button id="menipis-toggle" style="display:none">⚠️ Bahan<span id="menipis-badge" class="badge" style="display:none"></span></button>
+      <!-- Baris 2: menu (kiri) + auth (kanan) -->
+      <div class="header-row">
+        <div class="nav" id="header-left">
+          <button id="tab-kasir" class="active">MENU</button>
+          <button id="tab-history" style="display:none">🕘 Riwayat Pesanan</button>
+          <button id="menipis-toggle" style="display:none">⚠️ Bahan<span id="menipis-badge" class="badge" style="display:none"></span></button>
+        </div>
+        <button id="header-login">Log In</button>
         <div class="user-menu" style="display:none" id="user-menu">
           <span class="user-chip" id="user-chip"></span>
           <div class="user-dropdown" id="user-dropdown" style="display:none">
@@ -677,7 +732,7 @@
             <button class="dd-logout" id="dd-logout">🚪 Logout</button>
           </div>
         </div>
-      </nav>
+      </div>
     </header>
 
     <!-- ===== View: Kasir ===== -->
@@ -1041,6 +1096,7 @@
   </div>
 
   <div id="toast"></div>
+  <div id="toast-top"></div>
 
   <!-- ===== Login ===== -->
   <div class="login-overlay" id="login-overlay">
@@ -1540,22 +1596,10 @@
         if (sess && sess.token) headers.Authorization = "Bearer " + sess.token;
         const res = await fetch(url, { ...opts, headers, signal: ctrl.signal });
         if (res.status === 401) {
-          // Only logout on actual auth failure, not rate limit / server errors
-          try {
-            const j = await res.json();
-            if (j && j.error && j.error.includes("token")) {
-              localStorage.removeItem("cs_session");
-              try { session = null; showLogin(); } catch (e) {}
-              throw new Error("Sesi habis — login ulang");
-            }
-          } catch (_) {
-            // If response is not JSON, treat as auth failure
-            localStorage.removeItem("cs_session");
-            try { session = null; showLogin(); } catch (e) {}
-            throw new Error("Sesi habis — login ulang");
-          }
-          // For other 401 (rate limit, etc), don't logout, just throw
-          throw new Error("Akses ditolak");
+          // 401 selalu = auth gagal (worker melempar "Unauthorized") — bersihkan sesi sekali.
+          localStorage.removeItem("cs_session");
+          try { session = null; showLogin(); } catch (e) {}
+          throw new Error("Sesi habis — login ulang");
         }
         if (!res.ok) {
           let msg = "HTTP " + res.status;
@@ -1579,6 +1623,10 @@
 
     function switchTab(name) {
       currentTab = name;
+      try { localStorage.setItem("cs_tab", name); } catch (e) { /* abaikan quota penuh */ }
+      // Pre-paint sudah menyiapkan tampilan sesuai cs_tab; setelah JS jalan
+      // hapus atribut agar .view.active mendominasi lagi (klik normal).
+      try { document.documentElement.removeAttribute("data-initial-tab"); } catch (e) { /* abaikan */ }
       tabKasir.classList.toggle("active", name === "kasir");
       tabHistory.classList.toggle("active", name === "history");
       viewKasir.classList.toggle("active", name === "kasir");
@@ -1609,6 +1657,7 @@
 
     function switchSub(name) {
       subCur = name;
+      try { localStorage.setItem("cs_subtab", name); } catch (e) { /* abaikan quota penuh */ }
       subMenu.classList.toggle("active", name === "menu");
       subBahan.classList.toggle("active", name === "bahan");
       subResep.classList.toggle("active", name === "resep");
@@ -2109,7 +2158,9 @@ async function loadPayConfig() {
     });
 
     document.getElementById("bahan-add").addEventListener("click", () => {
-      recipeState.bahan.unshift({ id: `b${Date.now()}`, nama: "", harga: "", isi: "", stok: "", _new: true });
+      // createdAt = stempel pembelian baru; server memakai ini untuk urutan FIFO.
+      // Baris ditaruh paling atas HANYA untuk tampilan (_new), bukan penanda urutan.
+      recipeState.bahan.unshift({ id: `b${Date.now()}`, nama: "", harga: "", isi: "", stok: "", createdAt: new Date().toISOString(), _new: true });
       renderRecipe();
       // fokus input nama baris baru
       const firstInput = document.querySelector("#bahan-body tr:first-child input[data-field='nama']");
@@ -2228,15 +2279,18 @@ async function loadPayConfig() {
 
     // Simpan bersama: worker tulis ulang keduanya. Ini dipakai via Bahan + Resep btn.
     async function saveRecipe() {
-      // normalisasi: gabung batch identik (nama+harga+isi) jadi satu baris, stok dijumlahkan
+      // normalisasi: gabung batch identik (nama+harga+isi) jadi satu baris, stok dijumlahkan.
+      // createdAt ikut dikirim & pakai yang PALING AWAL — server memakai field ini untuk
+      // urutan FIFO, bukan posisi baris di array.
       const batchMap = new Map();
       recipeState.bahan.filter(b => b.nama).forEach(b => {
         const key = `${b.nama}|${b.harga}|${b.isi}`;
         if (batchMap.has(key)) {
           const g = batchMap.get(key);
           g.stok = String((Number(g.stok) || 0) + (Number(b.stok) || 0));
+          if (b.createdAt && (!g.createdAt || b.createdAt < g.createdAt)) g.createdAt = b.createdAt;
         } else {
-          batchMap.set(key, { nama: b.nama, harga: b.harga, isi: b.isi, stok: b.stok });
+          batchMap.set(key, { nama: b.nama, harga: b.harga, isi: b.isi, stok: b.stok, createdAt: b.createdAt || "" });
         }
       });
       const res = await fetchJson(`${WORKER_URL}/api/recipedata`, {
@@ -2285,31 +2339,43 @@ async function loadPayConfig() {
     }
     let session = loadSession();
 
-    function showLogin() { document.getElementById("login-overlay").style.display = "flex"; }
+    function showLogin() {
+      document.getElementById("login-overlay").style.display = "flex";
+      // form selalu dibuka pada mode Login dengan teks yang benar
+      loginMode = "login";
+      document.getElementById("login-pass").value = "";
+      renderLoginMode();
+    }
     function hideLogin() { document.getElementById("login-overlay").style.display = "none"; }
 
     // mode login: "login" | "register" | "guest"
     let loginMode = "login";
+    // Satu sumber render untuk semua elemen form login — dipakai saat klik tab
+    // dan saat form pertama kali dibuka, supaya tidak ada teks mode lama tertinggal.
+    function renderLoginMode() {
+      const pass = document.getElementById("login-pass");
+      const title = document.getElementById("login-title");
+      const btn = document.getElementById("login-btn");
+      if (!pass || !title || !btn) return;
+      if (loginMode === "guest") {
+        pass.style.display = "none";
+        pass.value = "";   // password lama jangan ikut terkirim saat mode tamu
+        title.textContent = "Masuk sebagai tamu (tanpa password)";
+        btn.textContent = "Masuk sebagai Tamu";
+      } else {
+        pass.style.display = "";
+        title.textContent = loginMode === "register" ? "Daftar akun baru" : "Login untuk melanjutkan";
+        btn.textContent = loginMode === "register" ? "Daftar" : "Login";
+      }
+      document.querySelectorAll(".login-tabs button").forEach(x =>
+        x.classList.toggle("active", x.dataset.mode === loginMode));
+    }
     document.querySelectorAll(".login-tabs button").forEach(b =>
       b.addEventListener("click", () => {
         loginMode = b.dataset.mode;
-        document.querySelectorAll(".login-tabs button").forEach(x => x.classList.toggle("active", x === b));
-        const pass = document.getElementById("login-pass");
-        const title = document.getElementById("login-title");
-        const hint = document.getElementById("login-hint");
-        const btn = document.getElementById("login-btn");
-        if (loginMode === "guest") {
-          pass.style.display = "none";
-          title.textContent = "Masuk sebagai tamu (tanpa password)";
-          hint.textContent = "Pesanan tamu tidak disimpan sebagai riwayat";
-          btn.textContent = "Masuk sebagai Tamu";
-        } else {
-          pass.style.display = "";
-          hint.textContent = loginMode === "register" ? "Buat akun baru — role USER" : "admin/admin123 · kasir/kasir123 · user/user123";
-          title.textContent = loginMode === "register" ? "Daftar akun baru" : "Login untuk melanjutkan";
-          btn.textContent = loginMode === "register" ? "Daftar" : "Login";
-        }
+        renderLoginMode();
       }));
+    renderLoginMode();   // state awal: Login
 
     async function doLogin() {
       const username = document.getElementById("login-user").value.trim();
@@ -2325,6 +2391,12 @@ async function loadPayConfig() {
           session = { username, role: "GUEST", expires: Date.now() + SESSION_TTL };
           localStorage.setItem("cs_session", JSON.stringify(session));
           applySession();
+          if (pendingCheckout) {
+            const pc = pendingCheckout;
+            pendingCheckout = null;
+            if (pc.mode === "direct") openPayModal(pc.items);
+            else openPayModal();
+          }
           return;
         }
         const url = loginMode === "register" ? "/api/register" : "/api/login";
@@ -2354,24 +2426,72 @@ async function loadPayConfig() {
         session = { username: res.username, role: res.role, token: res.token || "", expires: Date.now() + SESSION_TTL };
         localStorage.setItem("cs_session", JSON.stringify(session));
         applySession();
+        if (pendingCheckout) {
+          const pc = pendingCheckout;
+          pendingCheckout = null;
+          if (pc.mode === "direct") openPayModal(pc.items);
+          else openPayModal();
+        }
       } catch (e) {
         err.textContent = e.message;
       }
     }
     document.getElementById("login-btn").addEventListener("click", doLogin);
+    document.getElementById("header-login").addEventListener("click", () => showLogin());   // klik eksplisit: tanpa peringatan
     document.getElementById("login-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
     document.getElementById("login-user").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 
+    let pendingCheckout = null;   // 'cart' | 'direct' — diset saat user klik checkout/beli langsung tapi belum login
+
+    // Pulihkan tab terakhir. Saat belum login, admin/expense/report dipaksa ke kasir.
+    function restoreLastTab() {
+      let saved = "kasir";
+      try { const s = localStorage.getItem("cs_tab"); if (s) saved = s; } catch (e) { }
+      // Guest/USER tidak boleh masuk admin; KASIR boleh history/kasir; ADMIN semua.
+      const role = session ? session.role : null;
+      const isAdmin = role === "ADMIN";
+      const isStaff = isAdmin || role === "KASIR";
+      if (!session) {
+        // Riwayat butuh login; admin/report/expense butuh staff
+        switchTab(saved === "history" || saved === "expense" || saved === "report" || saved === "admin" ? "kasir" : "kasir");
+        return;
+      }
+      if (!isStaff && (saved === "expense" || saved === "report" || saved === "admin")) {
+        switchTab("kasir");
+        return;
+      }
+      if (!isAdmin && saved === "admin") { switchTab("kasir"); return; }
+      // tab-kasir / tab-history / tab-expense / tab-report / tab-admin sudah valid
+      switchTab(saved);
+      // sub-tab admin (hanya bila masuk admin)
+      if (saved === "admin") {
+        let sub = "menu";
+        try { const s = localStorage.getItem("cs_subtab"); if (s) sub = s; } catch (e) { }
+        switchSub(sub);
+      }
+    }
+
     function applySession() {
-      if (!session) { showLogin(); return; }
+      if (!session) {
+        // home tetap tampil tanpa login — menu bisa dilihat & dimasukkan keranjang,
+        // login baru diminta saat checkout
+        hideLogin();
+        document.getElementById("header-login").style.display = "";
+        document.getElementById("tab-history").style.display = "none";   // riwayat butuh login
+        loadMenu().then(() => { restoreCart(); restoreLastTab(); });
+        loadPayConfig();
+        return;
+      }
       hideLogin();
+      document.getElementById("header-login").style.display = "none";
+      document.getElementById("tab-history").style.display = "";   // tampil setelah login
       const menu = document.getElementById("user-menu");
       menu.style.display = "";
       const chip = document.getElementById("user-chip");
-      chip.textContent = `${session.username} · ${session.role}`;
+      chip.textContent = session.username;
       document.getElementById("user-dropdown").style.display = "none";
       applyPrivilege();
-      loadMenu().then(() => restoreCart());
+      loadMenu().then(() => { restoreCart(); restoreLastTab(); });
       loadPayConfig();   // muat metode pembayaran sekali di awal — kasir jangan pakai PAY_DEFAULTS
       if (session.role === "GUEST") {
         document.getElementById("status").style.display = "none";
@@ -2386,6 +2506,13 @@ async function loadPayConfig() {
       localStorage.removeItem("cs_cart");           // keranjang ikut dibersihkan
       Object.keys(cart).forEach(k => delete cart[k]);
       renderCart();
+      try { localStorage.removeItem("cs_tab"); localStorage.removeItem("cs_subtab"); } catch (e) { }
+      if (typeof switchTab === "function") { currentTab = "kasir"; switchTab("kasir"); }
+      // refresh chip kategori (Terlaris hilang untuk tamu)
+      if (typeof loadMenu === "function") loadMenu();
+      document.getElementById("header-login").style.display = "";
+      document.getElementById("tab-history").style.display = "none";
+      document.getElementById("user-menu").style.display = "none";
       showLogin();
     }
     document.getElementById("user-chip").addEventListener("click", (e) => {
@@ -2454,14 +2581,15 @@ async function loadPayConfig() {
         switchSub("menu");
       }
 
-      // Pengeluaran & Laporan: hanya KASIR & ADMIN
+      // Pengeluaran & Stok Opname: KASIR & ADMIN. Laporan: hanya ADMIN.
       const isStaff = role === "ADMIN" || role === "KASIR";
+      const isAdmin = role === "ADMIN";
       if (!isStaff && currentTab === "expense") switchTab("kasir");
-      if (!isStaff && currentTab === "report") switchTab("kasir");
+      if (!isAdmin && currentTab === "report") switchTab("kasir");
       document.getElementById("dd-expense").style.display = isStaff ? "" : "none";
       document.getElementById("dd-stok-opname").style.display = isStaff ? "" : "none";
-      document.getElementById("dd-report").style.display = isStaff ? "" : "none";
-      document.getElementById("dd-report-sep").style.display = isStaff ? "" : "none";
+      document.getElementById("dd-report").style.display = isAdmin ? "" : "none";
+      document.getElementById("dd-report-sep").style.display = isAdmin ? "" : "none";
 
       // Shift Management (Buka shift / Closing di user-menu)
       document.getElementById("dd-shift-toggle").style.display = isStaff ? "" : "none";
@@ -2470,8 +2598,10 @@ async function loadPayConfig() {
       if (isStaff) checkActiveShift();
 
       // tombol Setting — cuma ADMIN lihat
-      const isAdmin = role === "ADMIN";
       document.getElementById("dd-setting").style.display = isAdmin ? "" : "none";
+
+      // Ganti Password: hanya untuk yang punya akun server (bukan GUEST)
+      document.getElementById("dd-password").style.display = (role && role !== "GUEST") ? "" : "none";
 
       // Tombol Custom Order: hanya KASIR & ADMIN
       const showCustom = role === "KASIR" || role === "ADMIN";
@@ -2487,7 +2617,7 @@ async function loadPayConfig() {
     async function checkActiveShift() {
       if (!session || (session.role !== "ADMIN" && session.role !== "KASIR")) return;
       try {
-        const res = await fetchJson(`${WORKER_URL}/api/shifts/active?username=${encodeURIComponent(session.username || '')}`);
+        const res = await fetchJson(`${WORKER_URL}/api/shifts/active`);
         if (res && res.active && res.shift) {
           currentShift = res.shift;
         } else {
@@ -3099,8 +3229,17 @@ async function loadPayConfig() {
     let reportBahan = [];   // snapshot stok bahan (bukan per periode)
     async function loadReport() {
       try {
+        // Minta server membatasi rentang tanggal sesuai periode — tidak menarik seluruh tab Orders
+        const period = document.getElementById("report-period")?.value || "month";
+        const startDate = document.getElementById("report-date-start")?.value || "";
+        const endDate = document.getElementById("report-date-end")?.value || "";
+        const { from, to } = reportRangeDates(period, startDate, endDate);
+        const ordersUrl = new URL(`${WORKER_URL}/api/orders`);
+        if (from) ordersUrl.searchParams.set("from", from);
+        if (to) ordersUrl.searchParams.set("to", to);
+
         const [ordData, expData, opnData, bahanData, menipisData] = await Promise.all([
-          fetchJson(`${WORKER_URL}/api/orders`),
+          fetchJson(ordersUrl.toString()),
           fetchJson(`${WORKER_URL}/api/pengeluaran`).catch(() => []),
           fetchJson(`${WORKER_URL}/api/bahan/opname`).catch(() => []),
           fetchJson(`${WORKER_URL}/api/bahan/list`).catch(() => []),
@@ -3175,6 +3314,17 @@ async function loadPayConfig() {
         return true;
       }
       return true;
+    }
+
+    // Rentang tanggal WIB untuk query server-side (YYYY-MM-DD). Dipakai loadReport()
+    // supaya worker/mock tidak mengirim seluruh tab Orders untuk periode kecil.
+    function reportRangeDates(period, startDate, endDate) {
+      const today = wibToday();
+      if (period === "today") return { from: today, to: today };
+      if (period === "7days") return { from: shiftDate(today, -6), to: today };
+      if (period === "month") return { from: today.slice(0, 7) + "-01", to: today };
+      if (period === "custom") return { from: startDate || "", to: endDate || "" };
+      return {};   // "all" → tanpa filter
     }
 
     // Nilai stok bahan dalam Rupiah.
@@ -3751,10 +3901,10 @@ async function loadPayConfig() {
     document.getElementById("report-period").addEventListener("change", (e) => {
       const isCustom = e.target.value === "custom";
       document.getElementById("report-custom-dates").style.display = isCustom ? "inline-flex" : "none";
-      renderReport();
+      loadReport();   // reload data dari server dengan rentang baru — bukan hanya render ulang
     });
-    document.getElementById("report-date-start").addEventListener("change", renderReport);
-    document.getElementById("report-date-end").addEventListener("change", renderReport);
+    document.getElementById("report-date-start").addEventListener("change", loadReport);
+    document.getElementById("report-date-end").addEventListener("change", loadReport);
     document.getElementById("report-refresh").addEventListener("click", loadReport);
     document.getElementById("report-export-btn").addEventListener("click", exportReportCSV);
 
@@ -3791,14 +3941,7 @@ async function loadPayConfig() {
     };
     // Normalisasi entri server (mendukung payload lama tanpa `level`).
     function menipisLevelMeta(x) {
-      let level = x && x.level;
-      if (!MENIPIS_LEVELS[level]) {
-        // fallback payload lama: {stok, ambang, menipis}
-        const stok = Number(x && x.stok) || 0;
-        const ambang = Number(x && x.ambang) || 0;
-        const porsi = ambang > 0 ? Math.max(0, Math.floor((stok / ambang) * 10)) : (stok <= 0 ? 0 : 11);
-        level = porsi <= 0 ? "habis" : porsi <= 5 ? "kritis" : porsi <= 10 ? "menipis" : "aman";
-      }
+      const level = x && x.level;
       const meta = MENIPIS_LEVELS[level];
       if (!meta) return null;
       return { level, ...meta, porsi: Number(x.porsi) || 0, stok: Number(x.stok) || 0 };
@@ -3913,11 +4056,15 @@ async function loadPayConfig() {
     function populateCats() {
       const box = document.getElementById("kasir-cats");
       const cats = [...new Set(menu.map(m => m.kategori).filter(Boolean))];
+      // Terlaris butuh data riwayat penjualan — sembunyikan untuk tamu (data internal)
+      const showBest = session && (session.role === "ADMIN" || session.role === "KASIR" || session.role === "USER");
       const btns = [
         { v: "all", t: "Semua" },
-        { v: "bestseller", t: "🏆 Terlaris" },
+        ...(showBest ? [{ v: "bestseller", t: "🏆 Terlaris" }] : []),
         ...cats.map(c => ({ v: c, t: c }))
       ];
+      // Jika tamu sedang di filter bestseller lalu session hilang, kembalikan ke "all"
+      if (catFilter === "bestseller" && !showBest) catFilter = "all";
       box.innerHTML = btns.map(b =>
         `<button data-cat="${escapeAttr(b.v)}" class="${catFilter === b.v ? "active" : ""}">${escapeHtml(b.t)}</button>`
       ).join("");
@@ -4185,6 +4332,11 @@ async function loadPayConfig() {
         catatan
       }];
       closeOverlay("prod");
+      if (!session) {
+        pendingCheckout = { mode: "direct", items: directItems };
+        promptLogin();
+        return;
+      }
       openPayModal(directItems);
     });
 
@@ -4349,6 +4501,7 @@ async function loadPayConfig() {
     });
     document.getElementById("cart-checkout").addEventListener("click", () => {
       if (!cartCount()) { toast("Keranjang kosong", true); return; }
+      if (!session) { pendingCheckout = { mode: "cart" }; promptLogin(); return; }
       document.getElementById("cart-overlay").style.display = "none";
       overlayCount--;
       openPayModal();
@@ -4421,6 +4574,13 @@ async function loadPayConfig() {
       const isDirectPay = !!_payDirectItems;
       const entries = isDirectPay ? _payDirectItems : Object.values(cart);
       if (!isDirectPay && !cartCount()) return;
+      if (!session) {
+        pendingCheckout = isDirectPay ? { mode: "direct", items: _payDirectItems } : { mode: "cart" };
+        // tutup modal pay dulu — overlayCount harus seimbang saat login membuka pay lagi
+        closeOverlay("pay");
+        promptLogin();
+        return;
+      }
       const btn = document.getElementById("pay-confirm");
       btn.disabled = true;
       const invoices = [];
@@ -4442,9 +4602,13 @@ async function loadPayConfig() {
           invoices.push(data.invoice || data.id);
           // guest: catat juga di localStorage — riwayat sesi sampai logout
           if (session && session.role === "GUEST") {
-            const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-            guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items, total, metode: payMetode, status: data.status || "BARU" });
-            localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+            recordGuestOrder({
+              invoice: data.invoice,
+              items,
+              total,
+              metode: payMetode,
+              status: data.status || "BARU"
+            });
           }
         }
 
@@ -4463,16 +4627,19 @@ async function loadPayConfig() {
               })
             });
             invoices.push(data.invoice || data.id);
-            if (session && session.role === "GUEST") {
-              const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
-              const namaItem = item._baseNama || item.nama;
-              guestOrders.push({ invoice: data.invoice, waktu: new Date().toISOString(), items: [{ nama: namaItem, qty: 1, harga: Number(item.harga), catatan: catatan || "" }], total: Number(item.harga), metode: payMetode, status: "BARU" });
-              localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
-            }
+            const namaItem = item._baseNama || item.nama;
+            recordGuestOrder({
+              invoice: data.invoice,
+              items: [{ nama: namaItem, qty: 1, harga: Number(item.harga), catatan: catatan || "" }],
+              total: Number(item.harga),
+              metode: payMetode,
+              status: "BARU"
+            });
           }
         }
 
         toast(`Invoice ${invoices.join(", ")} — ${payMetode} ✓`);
+        pendingCheckout = null;
         // Beli Langsung: cart utama tidak disentuh
         if (!isDirectPay) {
           Object.keys(cart).forEach(k => delete cart[k]);
@@ -4557,6 +4724,9 @@ async function loadPayConfig() {
 
     function restoreCart() {
       try {
+        // Ganti isi keranjang dengan yang tersimpan, jangan menambah ke keranjang
+        // yang sudah berisi (mis. setelah login / refresh saat cart masih terisi).
+        Object.keys(cart).forEach(k => delete cart[k]);
         const data = JSON.parse(localStorage.getItem("cs_cart") || "[]");
         data.forEach(d => {
           const lookupNama = d.nama || d.cartKey; // fallback untuk data lama
@@ -4708,6 +4878,25 @@ async function loadPayConfig() {
       }
     }
 
+    // guest: catat order ke cs_guest_orders lokal — dipakai riwayat tamu (tanpa auth ke server)
+    function recordGuestOrder({ invoice, items, total, metode, status }) {
+      if (!session || session.role !== "GUEST") return;
+      try {
+        const guestOrders = JSON.parse(localStorage.getItem("cs_guest_orders") || "[]");
+        guestOrders.push({
+          invoice,
+          waktu: new Date().toISOString(),
+          items,
+          total,
+          metode,
+          status: status || "BARU"
+        });
+        localStorage.setItem("cs_guest_orders", JSON.stringify(guestOrders));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     function toast(msg, isError) {
       const t = document.getElementById("toast");
       t.textContent = msg;
@@ -4715,6 +4904,22 @@ async function loadPayConfig() {
       t.style.display = "block";
       clearTimeout(t._h);
       t._h = setTimeout(() => t.style.display = "none", 3000);
+    }
+
+    // Notifikasi tengah-atas — untuk peringatan yang butuh perhatian langsung
+    function toastTop(msg) {
+      const t = document.getElementById("toast-top");
+      if (!t) return;
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(t._h);
+      t._h = setTimeout(() => t.style.display = "none", 2600);
+    }
+
+    // Dipanggil sebelum membuka form login dari aksi checkout — beri tahu alasannya.
+    function promptLogin(reason) {
+      toastTop(reason || "Login Terlebih Dahulu");
+      showLogin();
     }
 
     function escapeHtml(s) {
@@ -4765,6 +4970,7 @@ async function loadPayConfig() {
 
     document.getElementById("checkout").addEventListener("click", () => {
       if (!cartCount()) { toast("Keranjang kosong", true); return; }
+      if (!session) { pendingCheckout = { mode: "cart" }; promptLogin(); return; }
       openPayModal();
     });
 
@@ -4893,7 +5099,7 @@ async function loadPayConfig() {
           <td><strong>${rupiah(o.total)}</strong></td>
           <td>${statusPill(o.status, o.id, o.metode)}</td>
           <td class="col-aksi" style="display:${isAdmin ? "" : "none"}">
-            ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${o.id}">Hapus</button>` : ""}
+            ${isAdmin ? `<button class="mini-btn hist-btn" data-act="delete" data-id="${escapeAttr(String(o.id))}">Hapus</button>` : ""}
           </td>
         `;
         body.appendChild(tr);

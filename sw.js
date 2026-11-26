@@ -1,5 +1,5 @@
 // Bump tiap rilis frontend — offline client menyajikan fallback dari cache lama
-const CACHE_NAME = 'delta-coffee-v4';
+const CACHE_NAME = 'delta-coffee-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
